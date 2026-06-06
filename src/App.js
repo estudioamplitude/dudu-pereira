@@ -677,6 +677,49 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
         </div>}
       </div>
  
+      {isDemo&&(a.diasAula||[]).length>0&&<div style={{
+        background:'linear-gradient(135deg,#1DBA8818,#4D9EF512)',
+        border:'1px solid #1DBA8830',
+        borderRadius:16,
+        padding:'1.25rem 1.5rem',
+        marginBottom:14,
+        position:'relative',
+        overflow:'hidden',
+      }}>
+        <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'linear-gradient(90deg,#1DBA88,#4D9EF5)',borderRadius:'16px 16px 0 0'}}/>
+        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
+          <div style={{width:36,height:36,borderRadius:10,background:'linear-gradient(135deg,#1DBA88,#0F8860)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,boxShadow:'0 0 16px #1DBA8840'}}>📅</div>
+          <div>
+            <div style={{fontSize:14,fontWeight:700,color:'var(--text)'}}>Próximas aulas</div>
+            <div style={{fontSize:11,color:'var(--text3)',marginTop:1}}>Seu horário semanal</div>
+          </div>
+        </div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          {(a.diasAula||[]).map(dia=><div key={dia} style={{
+            background:'linear-gradient(135deg,var(--surface2),var(--surface3))',
+            border:'1px solid #1DBA8830',
+            borderRadius:12,
+            padding:'12px 18px',
+            minWidth:130,
+            flex:1,
+          }}>
+            <div style={{fontSize:10,fontWeight:700,color:'#1DBA88',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:6}}>{dia}-feira</div>
+            <div style={{display:'flex',alignItems:'baseline',gap:5}}>
+              <span style={{fontSize:26,fontWeight:700,color:'var(--text)',letterSpacing:'-.03em',fontVariantNumeric:'tabular-nums'}}>
+                {a.horario?a.horario.split(':')[0]:'--'}
+              </span>
+              <span style={{fontSize:14,fontWeight:600,color:'var(--text2)'}}>
+                :{a.horario?a.horario.split(':')[1]:'--'}
+              </span>
+            </div>
+            <div style={{fontSize:10,color:'var(--text3)',marginTop:4}}>Horário de Brasília</div>
+          </div>)}
+        </div>
+        {a.horario&&<div style={{marginTop:12,padding:'8px 12px',background:'#1DBA8810',borderRadius:8,display:'flex',alignItems:'center',gap:7,fontSize:11,color:'#1DBA88',fontWeight:600}}>
+          🕐 Chegue com alguns minutos de antecedência!
+        </div>}
+      </div>}
+ 
       <div className="g2" style={{marginBottom:12}}>
         <div className="card">
           <div className="label">Mensalidade</div>
