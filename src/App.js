@@ -264,22 +264,34 @@ function Professor(){
   },[]);
  
   async function salvarAluno(dados,editId){
-    const id=editId||Date.now().toString();
-    const novo={
-      nm:dados.nm,in:ini(dados.nm),
-      ac:editId?(alunos.find(a=>a.id===editId)?.ac||AVC[alunos.length%AVC.length]):AVC[alunos.length%AVC.length],
-      pl:dados.pl,dia:parseInt(dados.dia)||10,val:parseFloat(dados.val)||150,
-      td:parseInt(dados.td)||30,wa:dados.wa||'',wr:dados.wr||'',an:dados.an||'',diasAula:dados.diasAula||[],horario:dados.horario||'',
-      ativo:editId?(alunos.find(a=>a.id===editId)?.ativo??true):true,
-      pags:editId?(alunos.find(a=>a.id===editId)?.pags||gP()):gP(),
-      tf:editId?(alunos.find(a=>a.id===editId)?.tf||[]):[],
-      ve:editId?(alunos.find(a=>a.id===editId)?.ve||[]):[],
-      es:editId?(alunos.find(a=>a.id===editId)?.es||[]):[],
-      ob:editId?(alunos.find(a=>a.id===editId)?.ob||''):'',
-      mural:editId?(alunos.find(a=>a.id===editId)?.mural||[]):[],
-      t:editId?(alunos.find(a=>a.id===editId)?.t||{R:{p:0,at:'—',ml:'—'},T:{p:0,at:'—',ml:'—'},K:{p:0,at:'—',bpm:60,ml:'—'}}):{R:{p:0,at:'—',ml:'—'},T:{p:0,at:'—',ml:'—'},K:{p:0,at:'—',bpm:60,ml:'—'}},
-    };
-    await setDoc(doc(db,'alunos',id),novo);
+    if(editId){
+      // Edição: atualiza só os campos do formulário, preserva o resto
+      await updateDoc(doc(db,'alunos',editId),{
+        nm:dados.nm,
+        in:ini(dados.nm),
+        pl:dados.pl,
+        dia:parseInt(dados.dia)||10,
+        val:parseFloat(dados.val)||150,
+        td:parseInt(dados.td)||30,
+        wa:dados.wa||'',
+        wr:dados.wr||'',
+        an:dados.an||'',
+        diasAula:dados.diasAula||[],
+        horario:dados.horario||'',
+      });
+    } else {
+      // Novo aluno: cria documento completo
+      const id=Date.now().toString();
+      await setDoc(doc(db,'alunos',id),{
+        nm:dados.nm,in:ini(dados.nm),
+        ac:AVC[alunos.length%AVC.length],
+        pl:dados.pl,dia:parseInt(dados.dia)||10,val:parseFloat(dados.val)||150,
+        td:parseInt(dados.td)||30,wa:dados.wa||'',wr:dados.wr||'',an:dados.an||'',
+        diasAula:dados.diasAula||[],horario:dados.horario||'',
+        ativo:true,pags:gP(),tf:[],ve:[],es:[],ob:'',mural:[],
+        t:{R:{p:0,at:'—',ml:'—'},T:{p:0,at:'—',ml:'—'},K:{p:0,at:'—',bpm:60,ml:'—'}},
+      });
+    }
     setModal(null);
   }
  
@@ -436,7 +448,7 @@ function Professor(){
 // ── Modal despachante ─────────────────────────────────────────────────────────
 function ModalDespachante({modal,setModal,alunos,banco,salvarAluno,salvarVideo,atualizarAluno}){
   if(!modal)return null;
-  if(modal.tipo==='aluno')return <ModalAluno aluno={modal.aluno} onSalvar={salvarAluno} onClose={()=>setModal(null)}/>;
+  if(modal.tipo==='aluno')return <ModalAluno aluno={modal.aluno?alunos.find(a=>a.id===modal.aluno.id)||modal.aluno:null} onSalvar={salvarAluno} onClose={()=>setModal(null)}/>;
   if(modal.tipo==='mural')return <ModalMural aluno={modal.aluno} onSalvar={async(dados)=>{
     const a=alunos.find(x=>x.id===modal.aluno.id);
     await atualizarAluno(a.id,{mural:[...(a.mural||[]),dados]});
