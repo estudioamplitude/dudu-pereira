@@ -248,6 +248,7 @@ function Professor(){
   const [alunoAberto,setAlunoAberto]=useState(null);
   const [loading,setLoading]=useState(true);
   const [filtro,setFiltro]=useState('ativos');
+  const [filtroDia,setFiltroDia]=useState('');
   const [busca,setBusca]=useState('');
   const [modal,setModal]=useState(null);
  
@@ -268,7 +269,7 @@ function Professor(){
       nm:dados.nm,in:ini(dados.nm),
       ac:editId?(alunos.find(a=>a.id===editId)?.ac||AVC[alunos.length%AVC.length]):AVC[alunos.length%AVC.length],
       pl:dados.pl,dia:parseInt(dados.dia)||10,val:parseFloat(dados.val)||150,
-      td:parseInt(dados.td)||30,wa:dados.wa||'',wr:dados.wr||'',an:dados.an||'',
+      td:parseInt(dados.td)||30,wa:dados.wa||'',wr:dados.wr||'',an:dados.an||'',diasAula:dados.diasAula||[],
       ativo:editId?(alunos.find(a=>a.id===editId)?.ativo??true):true,
       pags:editId?(alunos.find(a=>a.id===editId)?.pags||gP()):gP(),
       tf:editId?(alunos.find(a=>a.id===editId)?.tf||[]):[],
@@ -291,6 +292,12 @@ function Professor(){
     const id=editId||Date.now().toString();
     await setDoc(doc(db,'banco',id),dados);
     setModal(null);
+  }
+ 
+  async function excluirAluno(id){
+    if(!window.confirm('Excluir este aluno permanentemente? Esta ação não pode ser desfeita.'))return;
+    await deleteDoc(doc(db,'alunos',id));
+    setAlunoAberto(null);
   }
  
   async function excluirVideo(id){
@@ -322,6 +329,7 @@ function Professor(){
   let fl=alunos.filter(a=>a.nm?.toLowerCase().includes(busca.toLowerCase()));
   if(filtro==='ativos')fl=fl.filter(a=>a.ativo);
   else if(filtro==='inativos')fl=fl.filter(a=>!a.ativo);
+  if(filtroDia)fl=fl.filter(a=>(a.diasAula||[]).includes(filtroDia));
  
   if(loading)return <div className="loading">Carregando…</div>;
  
@@ -333,6 +341,7 @@ function Professor(){
       onEditar={()=>setModal({tipo:'aluno',aluno:a})}
       onModalMural={()=>setModal({tipo:'mural',aluno:a})}
       onEnviarVideo={()=>setModal({tipo:'enviarVideo',aluno:a})}
+      onExcluir={()=>excluirAluno(a.id)}
       modal={modal} setModal={setModal} banco={banco} alunos={alunos}
     />;
   }
@@ -389,8 +398,12 @@ function Professor(){
               )}
             </div>
           </div>
-          <div style={{display:'flex',gap:7}}>
-            <input className="inp" style={{width:160,fontSize:12}} placeholder="Buscar aluno..." value={busca} onChange={e=>setBusca(e.target.value)}/>
+          <div style={{display:'flex',gap:7,alignItems:'center'}}>
+            <select className="sel" style={{fontSize:11}} value={filtroDia} onChange={e=>setFiltroDia(e.target.value)}>
+              <option value="">Todos os dias</option>
+              {['Segunda','Terça','Quarta','Quinta','Sexta','Sábado'].map(d=><option key={d}>{d}</option>)}
+            </select>
+            <input className="inp" style={{width:150,fontSize:12}} placeholder="Buscar aluno..." value={busca} onChange={e=>setBusca(e.target.value)}/>
             <button className="btn btn-primary btn-sm" onClick={()=>setModal({tipo:'aluno',aluno:null})}>+ Novo aluno</button>
           </div>
         </div>
@@ -404,7 +417,7 @@ function Professor(){
                 <span style={{fontSize:14,fontWeight:700}}>{a.nm}</span>
                 {!a.ativo&&<Bd l="Inativo"/>}
               </div>
-              <div style={{fontSize:11,color:'var(--text2)',marginTop:2}}>{a.pl} · R$ {a.val} · {a.td}min/dia</div>
+              <div style={{fontSize:11,color:'var(--text2)',marginTop:2}}>{a.pl} · R$ {a.val} · {a.td}min/dia{(a.diasAula||[]).length>0?` · ${(a.diasAula||[]).join(', ')}`:''}</div>
             </div>
             <div style={{display:'flex',alignItems:'center',gap:12}}>
               <div style={{width:80}}>
@@ -449,7 +462,7 @@ function ModalDespachante({modal,setModal,alunos,banco,salvarAluno,salvarVideo,a
  
 // ── Modal Aluno ───────────────────────────────────────────────────────────────
 function ModalAluno({aluno,onSalvar,onClose}){
-  const [form,setForm]=useState({nm:aluno?.nm||'',wa:aluno?.wa||'',wr:aluno?.wr||'',an:aluno?.an||'',pl:aluno?.pl||'Learning Plan',dia:aluno?.dia?.toString()||'10',val:aluno?.val?.toString()||'150',td:aluno?.td?.toString()||'30'});
+  const [form,setForm]=useState({nm:aluno?.nm||'',wa:aluno?.wa||'',wr:aluno?.wr||'',an:aluno?.an||'',pl:aluno?.pl||'Learning Plan',dia:aluno?.dia?.toString()||'10',val:aluno?.val?.toString()||'150',td:aluno?.td?.toString()||'30',diasAula:aluno?.diasAula||[]});
   const f=k=>v=>setForm(p=>({...p,[k]:v}));
   return <Modal title={aluno?'Editar aluno':'Novo aluno'} onClose={onClose}>
     <div className="fsec">
@@ -470,6 +483,15 @@ function ModalAluno({aluno,onSalvar,onClose}){
         <div><div className="flabel">Valor (R$)</div><input className="inp" type="number" value={form.val} onChange={e=>f('val')(e.target.value)}/></div>
         <div><div className="flabel">Vencimento (dia)</div><input className="inp" type="number" value={form.dia} onChange={e=>f('dia')(e.target.value)}/></div>
         <div><div className="flabel">Tempo/dia (min)</div><input className="inp" type="number" value={form.td} onChange={e=>f('td')(e.target.value)}/></div>
+      </div>
+    </div>
+    <div className="fsec">
+      <div className="label">Dia da aula</div>
+      <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+        {['Segunda','Terça','Quarta','Quinta','Sexta','Sábado'].map(d=>{
+          const sel=(form.diasAula||[]).includes(d);
+          return <button key={d} onClick={()=>setForm(p=>({...p,diasAula:sel?p.diasAula.filter(x=>x!==d):[...(p.diasAula||[]),d]}))} style={{padding:'6px 12px',borderRadius:20,cursor:'pointer',fontSize:11,fontWeight:600,background:sel?'var(--primary-dim)':'transparent',border:`1px solid ${sel?'var(--primary)':'var(--border)'}`,color:sel?'var(--primary)':'var(--text2)',fontFamily:'inherit'}}>{d}</button>;
+        })}
       </div>
     </div>
     <div style={{display:'flex',gap:9,justifyContent:'flex-end'}}>
@@ -580,7 +602,7 @@ function BancoVideos({banco,alunos,modal,setModal,salvarVideo,excluirVideo,atual
 }
  
 // ── Perfil do Aluno (professor + aluno) ───────────────────────────────────────
-function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,modal,setModal,alunos}){
+function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onExcluir,modal,setModal,alunos}){
   const [openV,setOpenV]=useState(null);
   const [openMural,setOpenMural]=useState(null);
  
@@ -639,7 +661,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
             <span style={{fontSize:19,fontWeight:700,letterSpacing:'-.02em'}}>{a.nm}</span>
             {!a.ativo&&<Bd l="Inativo"/>}
           </div>
-          <div style={{fontSize:12,color:'var(--text2)',marginTop:3}}>{a.pl} · Vencimento dia {a.dia}</div>
+          <div style={{fontSize:12,color:'var(--text2)',marginTop:3}}>{a.pl} · Vencimento dia {a.dia}{(a.diasAula||[]).length>0?` · 📅 ${(a.diasAula||[]).join(', ')}`:''}</div>
         </div>
         {!isDemo&&<div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
           <button className="btn btn-sm" style={{borderColor:'#4D9EF540',color:'#4D9EF5'}} onClick={()=>{
@@ -650,6 +672,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
           <button className="btn btn-sm" style={{borderColor:'#D4A84340',color:'#D4A843'}} onClick={onModalMural}>🎬 Mural</button>
           <button className="btn btn-sm" onClick={onEditar}>✎ Editar</button>
           <button className={`btn btn-xs ${a.ativo?'btn-danger':''}`} onClick={()=>onUpdate({ativo:!a.ativo})}>{a.ativo?'Desativar':'Ativar'}</button>
+          {!isDemo&&<button className="btn btn-xs btn-danger" onClick={onExcluir}>🗑 Excluir aluno</button>}
         </div>}
       </div>
  
@@ -799,3 +822,4 @@ export default function App(){
     </Routes>
   </BrowserRouter>;
 }
+ 
