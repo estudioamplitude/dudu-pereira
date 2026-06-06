@@ -269,7 +269,7 @@ function Professor(){
       nm:dados.nm,in:ini(dados.nm),
       ac:editId?(alunos.find(a=>a.id===editId)?.ac||AVC[alunos.length%AVC.length]):AVC[alunos.length%AVC.length],
       pl:dados.pl,dia:parseInt(dados.dia)||10,val:parseFloat(dados.val)||150,
-      td:parseInt(dados.td)||30,wa:dados.wa||'',wr:dados.wr||'',an:dados.an||'',diasAula:dados.diasAula||[],
+      td:parseInt(dados.td)||30,wa:dados.wa||'',wr:dados.wr||'',an:dados.an||'',diasAula:dados.diasAula||[],horario:dados.horario||'',
       ativo:editId?(alunos.find(a=>a.id===editId)?.ativo??true):true,
       pags:editId?(alunos.find(a=>a.id===editId)?.pags||gP()):gP(),
       tf:editId?(alunos.find(a=>a.id===editId)?.tf||[]):[],
@@ -420,10 +420,6 @@ function Professor(){
               <div style={{fontSize:11,color:'var(--text2)',marginTop:2}}>{a.pl} · R$ {a.val} · {a.td}min/dia{(a.diasAula||[]).length>0?` · ${(a.diasAula||[]).join(', ')}`:''}</div>
             </div>
             <div style={{display:'flex',alignItems:'center',gap:12}}>
-              <div style={{width:80}}>
-                <div className="pb"><div className="pf" style={{width:`${p}%`,background:a.ac,boxShadow:`0 0 6px ${a.ac}60`}}/></div>
-                <div style={{fontSize:9,color:'var(--text3)',textAlign:'right',marginTop:3}}>{p}%</div>
-              </div>
               {a.ativo&&<Bd l={st}/>}
               <span style={{color:'var(--text3)',fontSize:16}}>›</span>
             </div>
@@ -462,7 +458,7 @@ function ModalDespachante({modal,setModal,alunos,banco,salvarAluno,salvarVideo,a
  
 // ── Modal Aluno ───────────────────────────────────────────────────────────────
 function ModalAluno({aluno,onSalvar,onClose}){
-  const [form,setForm]=useState({nm:aluno?.nm||'',wa:aluno?.wa||'',wr:aluno?.wr||'',an:aluno?.an||'',pl:aluno?.pl||'Learning Plan',dia:aluno?.dia?.toString()||'10',val:aluno?.val?.toString()||'150',td:aluno?.td?.toString()||'30',diasAula:aluno?.diasAula||[]});
+  const [form,setForm]=useState({nm:aluno?.nm||'',wa:aluno?.wa||'',wr:aluno?.wr||'',an:aluno?.an||'',pl:aluno?.pl||'Learning Plan',dia:aluno?.dia?.toString()||'10',val:aluno?.val?.toString()||'150',td:aluno?.td?.toString()||'30',diasAula:aluno?.diasAula||[],horario:aluno?.horario||''});
   const f=k=>v=>setForm(p=>({...p,[k]:v}));
   return <Modal title={aluno?'Editar aluno':'Novo aluno'} onClose={onClose}>
     <div className="fsec">
@@ -493,6 +489,11 @@ function ModalAluno({aluno,onSalvar,onClose}){
           return <button key={d} onClick={()=>setForm(p=>({...p,diasAula:sel?p.diasAula.filter(x=>x!==d):[...(p.diasAula||[]),d]}))} style={{padding:'6px 12px',borderRadius:20,cursor:'pointer',fontSize:11,fontWeight:600,background:sel?'var(--primary-dim)':'transparent',border:`1px solid ${sel?'var(--primary)':'var(--border)'}`,color:sel?'var(--primary)':'var(--text2)',fontFamily:'inherit'}}>{d}</button>;
         })}
       </div>
+    </div>
+    <div className="fsec" style={{marginBottom:12}}>
+      <div className="label">Horário da aula</div>
+      <input className="inp" type="time" value={form.horario} onChange={e=>setForm(p=>({...p,horario:e.target.value}))} style={{width:160,fontSize:13}}/>
+      <div style={{fontSize:11,color:'var(--text3)',marginTop:5}}>Este horário será exibido na área do aluno</div>
     </div>
     <div style={{display:'flex',gap:9,justifyContent:'flex-end'}}>
       <button className="btn btn-sm" onClick={onClose}>Cancelar</button>
@@ -661,7 +662,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
             <span style={{fontSize:19,fontWeight:700,letterSpacing:'-.02em'}}>{a.nm}</span>
             {!a.ativo&&<Bd l="Inativo"/>}
           </div>
-          <div style={{fontSize:12,color:'var(--text2)',marginTop:3}}>{a.pl} · Vencimento dia {a.dia}{(a.diasAula||[]).length>0?` · 📅 ${(a.diasAula||[]).join(', ')}`:''}</div>
+          {isDemo?(<div style={{fontSize:12,color:'var(--text2)',marginTop:3}}>{(a.diasAula||[]).length>0?`📅 ${(a.diasAula||[]).join(', ')}`:''}{ a.horario?` · 🕐 ${a.horario}`:''}</div>):(<div style={{fontSize:12,color:'var(--text2)',marginTop:3}}>{a.pl} · Vencimento dia {a.dia}{(a.diasAula||[]).length>0?` · 📅 ${(a.diasAula||[]).join(', ')}`:''}{a.horario?` · 🕐 ${a.horario}`:''}</div>)}
         </div>
         {!isDemo&&<div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
           <button className="btn btn-sm" style={{borderColor:'#4D9EF540',color:'#4D9EF5'}} onClick={()=>{
@@ -822,4 +823,3 @@ export default function App(){
     </Routes>
   </BrowserRouter>;
 }
- 
