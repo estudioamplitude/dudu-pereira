@@ -20,7 +20,7 @@ html{scroll-behavior:smooth;}
 body{font-family:'Sora',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 .topbar{background:rgba(8,10,15,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:50;}
 .logo{display:flex;align-items:center;gap:12px;}
-.logo-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#1DBA88,#0D6B50);display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;box-shadow:0 0 16px #1DBA8840;}
+.logo-icon{width:34px;height:34px;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center;}.logo-icon img{width:100%;height:100%;object-fit:cover;}
 .logo-name{font-size:15px;font-weight:700;letter-spacing:-.02em;}
 .logo-sub{font-size:10px;color:var(--text3);margin-top:1px;letter-spacing:.04em;text-transform:uppercase;}
 .nav{display:flex;gap:2px;}
@@ -216,7 +216,7 @@ function Login({onLogin}){
   return <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'var(--bg)'}}>
     <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-xl)',padding:'2.5rem',width:380,boxShadow:'0 24px 80px rgba(0,0,0,.5)'}}>
       <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:'2rem'}}>
-        <div className="logo-icon">♪</div>
+        <div className="logo-icon"><img src="/favicon.png" alt="Dudu Pereira logo"/></div>
         <div>
           <div style={{fontSize:17,fontWeight:700}}>Dudu Pereira</div>
           <div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.04em'}}>Área do Professor</div>
@@ -363,7 +363,7 @@ function Professor(){
     <style>{G}</style>
     <div className="topbar">
       <div className="logo">
-        <div className="logo-icon">♪</div>
+        <div className="logo-icon"><img src="/favicon.png" alt="Dudu Pereira logo"/></div>
         <div><div className="logo-name">Dudu Pereira</div><div className="logo-sub">Professor</div></div>
       </div>
       <nav className="nav">
@@ -696,7 +696,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
     <style>{G}</style>
     <div className="topbar">
       <div className="logo">
-        <div className="logo-icon">♪</div>
+        <div className="logo-icon"><img src="/favicon.png" alt="Dudu Pereira logo"/></div>
         <div><div className="logo-name">Dudu Pereira</div><div className="logo-sub">{isDemo?'Minha área':'Professor'}</div></div>
       </div>
       {!isDemo&&<button className="nav-btn" onClick={()=>signOut(auth)}>Sair</button>}
