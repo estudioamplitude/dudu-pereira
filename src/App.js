@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from '
 import { db, auth } from './firebase';
 import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
- 
+
 // ── Estilos globais ──────────────────────────────────────────────────────────
 const G = `
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap');
@@ -113,13 +113,13 @@ body{font-family:'Sora',-apple-system,sans-serif;background:var(--bg);color:var(
 .sdiv-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;}
 .loading{display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:14px;color:var(--text2);}
 `;
- 
+
 // ── Constantes ───────────────────────────────────────────────────────────────
 const MS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const PW = {Alta:3,Média:2,Baixa:1};
 const CL = ['#1DBA88','#4D9EF5','#F0A040','#7B68EE','#E870A0','#F05050'];
 const AVC = ['#1DBA88','#4D9EF5','#F0A040','#7B68EE','#E870A0','#F05050'];
- 
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function mN(){const d=new Date();return MS[d.getMonth()]+'/'+d.getFullYear();}
 function sP(p,dia){
@@ -143,7 +143,7 @@ function yTh(id){return 'https://img.youtube.com/vi/'+id+'/mqdefault.jpg';}
 function yEm(id){return 'https://www.youtube.com/embed/'+id+'?rel=0&autoplay=1';}
 function yId(url){const m=url.match(/(?:v=|youtu\.be\/)([^&\s]+)/);return m?m[1]:null;}
 function pgr(a){return Math.round(((a.t?.R?.p||0)+(a.t?.T?.p||0)+(a.t?.K?.p||0))/3);}
- 
+
 // ── Avatar + Badge ───────────────────────────────────────────────────────────
 function Av({a,z=36}){
   return <div className="av" style={{width:z,height:z,background:a.ac+'22',border:`2px solid ${a.ac}50`,color:a.ac,fontSize:Math.round(z*.34),boxShadow:`0 0 12px ${a.ac}20`}}>{a.in}</div>;
@@ -153,7 +153,7 @@ function Bd({l}){
     Técnica:'b-amber',Teoria:'b-blue',Repertório:'b-green',Estudado:'b-green',Ativo:'b-green',Inativo:'b-inactive'};
   return <span className={`badge ${m[l]||'b-gray'}`}>{l}</span>;
 }
- 
+
 // ── Pizza SVG ─────────────────────────────────────────────────────────────────
 function Pizza({dist,td}){
   if(!dist.length)return <div style={{fontSize:12,color:'var(--text3)',padding:'1rem 0'}}>Nenhuma estudo ativa.</div>;
@@ -185,7 +185,7 @@ function Pizza({dist,td}){
     </div>
   </div>;
 }
- 
+
 // ── Modal ─────────────────────────────────────────────────────────────────────
 function Modal({title,onClose,children}){
   return <div className="moverlay on" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
@@ -198,21 +198,21 @@ function Modal({title,onClose,children}){
     </div>
   </div>;
 }
- 
+
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
 function Login({onLogin}){
   const [email,setEmail]=useState('');
   const [senha,setSenha]=useState('');
   const [err,setErr]=useState('');
   const [loading,setLoading]=useState(false);
- 
+
   async function handleLogin(e){
     e.preventDefault();setErr('');setLoading(true);
     try{await signInWithEmailAndPassword(auth,email,senha);onLogin();}
     catch{setErr('Email ou senha incorretos.');}
     setLoading(false);
   }
- 
+
   return <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'var(--bg)'}}>
     <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-xl)',padding:'2.5rem',width:380,boxShadow:'0 24px 80px rgba(0,0,0,.5)'}}>
       <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:'2rem'}}>
@@ -239,7 +239,7 @@ function Login({onLogin}){
     </div>
   </div>;
 }
- 
+
 // ── PAINEL DO PROFESSOR ───────────────────────────────────────────────────────
 function Professor(){
   const [alunos,setAlunos]=useState([]);
@@ -251,7 +251,7 @@ function Professor(){
   const [filtroDia,setFiltroDia]=useState('');
   const [busca,setBusca]=useState('');
   const [modal,setModal]=useState(null);
- 
+
   useEffect(()=>{
     const unsub=onSnapshot(collection(db,'alunos'),snap=>{
       setAlunos(snap.docs.map(d=>({id:d.id,...d.data()})));
@@ -262,7 +262,7 @@ function Professor(){
     });
     return ()=>{unsub();unsubB();};
   },[]);
- 
+
   async function salvarAluno(dados,editId){
     if(editId){
       // Edição: atualiza só os campos do formulário, preserva o resto
@@ -294,24 +294,24 @@ function Professor(){
     }
     setModal(null);
   }
- 
+
   async function atualizarAluno(id,dados){
     await updateDoc(doc(db,'alunos',id),dados);
     if(alunoAberto?.id===id)setAlunoAberto(a=>({...a,...dados}));
   }
- 
+
   async function salvarVideo(dados,editId){
     const id=editId||Date.now().toString();
     await setDoc(doc(db,'banco',id),dados);
     setModal(null);
   }
- 
+
   async function excluirAluno(id){
     if(!window.confirm('Excluir este aluno permanentemente? Esta ação não pode ser desfeita.'))return;
     await deleteDoc(doc(db,'alunos',id));
     setAlunoAberto(null);
   }
- 
+
   async function excluirVideo(id){
     if(!window.confirm('Remover este vídeo?'))return;
     await deleteDoc(doc(db,'banco',id));
@@ -321,7 +321,7 @@ function Professor(){
       }
     }
   }
- 
+
   const hoje=new Date();
   const mesHoje=hoje.getMonth();
   const diaHoje=hoje.getDate();
@@ -331,20 +331,20 @@ function Professor(){
     if(mes!==mesHoje)return null;
     return {a,dia,diasRestantes:dia-diaHoje};
   }).filter(Boolean).sort((x,y)=>x.dia-y.dia);
- 
+
   const ativos=alunos.filter(a=>a.ativo).length;
   const inativos=alunos.filter(a=>!a.ativo).length;
   const p2=alunos.filter(a=>a.ativo&&a.pags?.[0]&&sP(a.pags[0],a.dia)==='pago').length;
   const pe=alunos.filter(a=>a.ativo&&a.pags?.[0]&&sP(a.pags[0],a.dia)==='pendente').length;
   const at=alunos.filter(a=>a.ativo&&a.pags?.[0]&&sP(a.pags[0],a.dia)==='atrasado').length;
- 
+
   let fl=alunos.filter(a=>a.nm?.toLowerCase().includes(busca.toLowerCase()));
   if(filtro==='ativos')fl=fl.filter(a=>a.ativo);
   else if(filtro==='inativos')fl=fl.filter(a=>!a.ativo);
   if(filtroDia)fl=fl.filter(a=>(a.diasAula||[]).includes(filtroDia));
- 
+
   if(loading)return <div className="loading">Carregando…</div>;
- 
+
   if(alunoAberto){
     const a=alunos.find(x=>x.id===alunoAberto.id)||alunoAberto;
     return <PerfilAluno a={a} banco={banco} isDemo={false}
@@ -358,7 +358,7 @@ function Professor(){
       modal={modal} setModal={setModal} banco={banco} alunos={alunos}
     />;
   }
- 
+
   return <div>
     <style>{G}</style>
     <div className="topbar">
@@ -372,10 +372,10 @@ function Professor(){
         <button className="nav-btn" onClick={()=>signOut(auth)}>Sair</button>
       </nav>
     </div>
- 
+
     {modal&&<ModalDespachante modal={modal} setModal={setModal} alunos={alunos} banco={banco}
       salvarAluno={salvarAluno} salvarVideo={salvarVideo} atualizarAluno={atualizarAluno}/>}
- 
+
     <div className="main">
       {aba==='alunos'&&<div>
         {aniversariantes.length>0&&<div style={{background:'linear-gradient(135deg,#7B68EE18,#D4A84318)',border:'1px solid #D4A84335',borderRadius:14,padding:'14px 18px',marginBottom:'1.2rem',display:'flex',alignItems:'center',gap:14,flexWrap:'wrap'}}>
@@ -395,13 +395,13 @@ function Professor(){
             </div>
           </div>
         </div>}
- 
+
         <div className="g4" style={{marginBottom:'1.4rem'}}>
           {[['Total ativos',ativos,'var(--text)'],['Em dia',p2,'var(--primary)'],['Pendentes',pe,'var(--amber)'],['Atrasados',at,'var(--red)']].map(([l,v,c])=>
             <div key={l} className="metric"><div className="metric-label">{l}</div><div className="metric-val" style={{color:c}}>{v}</div></div>
           )}
         </div>
- 
+
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12,gap:10,flexWrap:'wrap'}}>
           <div style={{display:'flex',alignItems:'center',gap:10}}>
             <span className="label" style={{margin:0}}>Alunos</span>
@@ -420,7 +420,7 @@ function Professor(){
             <button className="btn btn-primary btn-sm" onClick={()=>setModal({tipo:'aluno',aluno:null})}>+ Novo aluno</button>
           </div>
         </div>
- 
+
         {fl.map(a=>{
           const p=pgr(a),pb=a.pags?.[0],st=pb?sP(pb,a.dia):'pendente';
           return <div key={a.id} className={`arow ${!a.ativo?'inactive':''}`} style={st==='atrasado'&&a.ativo?{borderColor:'#F0505035'}:{}} onClick={()=>setAlunoAberto(a)}>
@@ -440,12 +440,12 @@ function Professor(){
         })}
         {fl.length===0&&<div className="empty">Nenhum aluno encontrado.</div>}
       </div>}
- 
+
       {aba==='banco'&&<BancoVideos banco={banco} alunos={alunos} modal={modal} setModal={setModal} salvarVideo={salvarVideo} excluirVideo={excluirVideo} atualizarAluno={atualizarAluno}/>}
     </div>
   </div>;
 }
- 
+
 // ── Modal despachante ─────────────────────────────────────────────────────────
 function ModalDespachante({modal,setModal,alunos,banco,salvarAluno,salvarVideo,atualizarAluno}){
   if(!modal)return null;
@@ -468,7 +468,7 @@ function ModalDespachante({modal,setModal,alunos,banco,salvarAluno,salvarVideo,a
   if(modal.tipo==='video')return <ModalVideo video={modal.video} onSalvar={salvarVideo} onClose={()=>setModal(null)}/>;
   return null;
 }
- 
+
 // ── Modal Aluno ───────────────────────────────────────────────────────────────
 function ModalAluno({aluno,onSalvar,onClose}){
   const [form,setForm]=useState({nm:aluno?.nm||'',wa:aluno?.wa||'',wr:aluno?.wr||'',an:aluno?.an||'',pl:aluno?.pl||'Learning Plan',dia:aluno?.dia?.toString()||'10',val:aluno?.val?.toString()||'150',td:aluno?.td?.toString()||'30',diasAula:aluno?.diasAula||[],horario:aluno?.horario||''});
@@ -514,7 +514,7 @@ function ModalAluno({aluno,onSalvar,onClose}){
     </div>
   </Modal>;
 }
- 
+
 // ── Modal Video ───────────────────────────────────────────────────────────────
 function ModalVideo({video,onSalvar,onClose}){
   const [form,setForm]=useState({tt:video?.tt||'',url:video?`https://www.youtube.com/watch?v=${video.yt}`:'',tr:video?.tr||'Técnica',ob:video?.ob||''});
@@ -534,7 +534,7 @@ function ModalVideo({video,onSalvar,onClose}){
     </div>
   </Modal>;
 }
- 
+
 // ── Modal Mural ───────────────────────────────────────────────────────────────
 function ModalMural({aluno,onSalvar,onClose}){
   const hoje=new Date();
@@ -553,7 +553,7 @@ function ModalMural({aluno,onSalvar,onClose}){
     </div>
   </Modal>;
 }
- 
+
 // ── Modal Enviar Video ────────────────────────────────────────────────────────
 function ModalEnviarVideo({aluno,banco,onToggle,onClose}){
   const [ve,setVe]=useState(aluno.ve||[]);
@@ -567,7 +567,7 @@ function ModalEnviarVideo({aluno,banco,onToggle,onClose}){
     <button className="btn btn-primary" style={{width:'100%',marginTop:14,justifyContent:'center'}} onClick={onClose}>✓ Confirmar</button>
   </Modal>;
 }
- 
+
 // ── Modal Enviar Banco ────────────────────────────────────────────────────────
 function ModalEnviarBanco({video,alunos,onToggle,onClose}){
   const [atrib,setAtrib]=useState(alunos.filter(a=>a.ve?.includes(video.id)).map(a=>a.id));
@@ -580,7 +580,7 @@ function ModalEnviarBanco({video,alunos,onToggle,onClose}){
     <button className="btn btn-primary" style={{width:'100%',marginTop:14,justifyContent:'center'}} onClick={onClose}>✓ Confirmar</button>
   </Modal>;
 }
- 
+
 // ── Banco de Vídeos ───────────────────────────────────────────────────────────
 function BancoVideos({banco,alunos,modal,setModal,salvarVideo,excluirVideo,atualizarAluno}){
   const [busca,setBusca]=useState('');
@@ -616,9 +616,9 @@ function BancoVideos({banco,alunos,modal,setModal,salvarVideo,excluirVideo,atual
     {fl.length===0&&<div className="empty">Nenhum vídeo encontrado.</div>}
   </div>;
 }
- 
+
 // ── Perfil do Aluno (professor + aluno) ───────────────────────────────────────
- 
+
 // ── Backlog de estudos concluídos ─────────────────────────────────────────────
 function BacklogEstudos({tarefas,isDemo,onToggle,onDelete}){
   const [aberto,setAberto]=React.useState(false);
@@ -654,22 +654,22 @@ function BacklogEstudos({tarefas,isDemo,onToggle,onDelete}){
     </div>}
   </div>;
 }
- 
+
 function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onExcluir,salvarAluno,modal,setModal,alunos}){
   const [openV,setOpenV]=useState(null);
   const [openMural,setOpenMural]=useState(null);
- 
+
   if(!a)return null;
   const mn=mN();
   const pags=a.pags||[];
   const pagsComMes=pags.find(p=>p.mes===mn)?pags:[{mes:mn,status:'pendente'},...pags];
- 
+
   const dist=cT(a.tf||[],a.td||30);
   const st0=pagsComMes[0]?sP(pagsComMes[0],a.dia):'pendente';
   const bn=st0==='pago'?{bg:'#1DBA8815',c:'#1DBA88',bc:'#1DBA8830',m:'✓ Mensalidade paga — tudo em dia!'}
     :st0==='pendente'?{bg:'#F0A04015',c:'#F0A040',bc:'#F0A04030',m:`⚠ Vence dia ${a.dia} — ainda no prazo.`}
     :{bg:'#F0505015',c:'#F05050',bc:'#F0505030',m:`✕ Venceu dia ${a.dia} — em atraso.`};
- 
+
   async function mP(i){const p=[...pagsComMes];p[i]={...p[i],status:'pago'};onUpdate({pags:p});}
   async function dP(i){const p=[...pagsComMes];p[i]={...p[i],status:'pendente'};onUpdate({pags:p});}
   async function togT(id){onUpdate({tf:(a.tf||[]).map(t=>t.id===id?{...t,feita:!t.feita}:t)});}
@@ -682,7 +682,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
   async function mEst(vid){onUpdate({es:[...(a.es||[]),vid]});}
   async function rV(vid){onUpdate({ve:(a.ve||[]).filter(x=>x!==vid)});}
   async function remMural(mid){onUpdate({mural:(a.mural||[]).filter(v=>v.id!==mid)});}
- 
+
   const NewTaskBar=()=>{
     const [tx,setTx]=useState('');const [pr,setPr]=useState('Alta');
     return <div style={{display:'flex',gap:5,marginTop:10}}>
@@ -691,7 +691,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
       <button className="btn btn-primary btn-sm" onClick={()=>{if(tx.trim()){addT(tx.trim(),pr);setTx('');}}}>+ Add</button>
     </div>;
   };
- 
+
   return <div>
     <style>{G}</style>
     <div className="topbar">
@@ -701,12 +701,12 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
       </div>
       {!isDemo&&<button className="nav-btn" onClick={()=>signOut(auth)}>Sair</button>}
     </div>
- 
+
     {modal&&!isDemo&&<ModalDespachante modal={modal} setModal={setModal} alunos={alunos||[]} banco={banco} salvarAluno={salvarAluno||((dados,id)=>{})} salvarVideo={()=>{}} atualizarAluno={async(id,d)=>onUpdate(d)}/>}
- 
+
     <div className="main">
       {!isDemo&&<button className="back-btn" onClick={onVoltar}>← Voltar para lista</button>}
- 
+
       <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:'1.25rem'}}>
         <Av a={a} z={52}/>
         <div style={{flex:1}}>
@@ -728,8 +728,8 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
           {!isDemo&&<button className="btn btn-xs btn-danger" onClick={onExcluir}>🗑 Excluir aluno</button>}
         </div>}
       </div>
- 
-      <div className="g2" style={{marginBottom:12}}>
+
+      <div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:12}}>
         <div className="card">
           <div className="label">Mensalidade</div>
           <div className="banner" style={{background:bn.bg,color:bn.c,border:`1px solid ${bn.bc}`}}>{bn.m}</div>
@@ -750,7 +750,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
             </div>;
           })}
         </div>
- 
+
         <div className="card">
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
             <div className="label" style={{margin:0}}>Estudos da semana</div>
@@ -770,19 +770,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
           </div>}
         </div>
       </div>
- 
-      <div className="card-glow" style={{marginBottom:12}}>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
-          <div className="label" style={{margin:0}}>Plano de estudo diário</div>
-          {!isDemo?<div style={{display:'flex',alignItems:'center',gap:7}}>
-            <span style={{fontSize:11,color:'var(--text3)'}}>Tempo:</span>
-            <input type="number" min="5" max="180" step="5" defaultValue={a.td} className="inp" style={{width:54,textAlign:'center',fontSize:12}} onBlur={e=>sTd(e.target.value)}/>
-            <span style={{fontSize:11,color:'var(--text3)'}}>min/dia</span>
-          </div>:<span style={{fontSize:12,fontWeight:700,color:'var(--primary)'}}>{a.td} min/dia</span>}
-        </div>
-        <Pizza dist={dist} td={a.td||30}/>
-      </div>
- 
+
       {(a.ve||[]).length>0&&<div style={{marginBottom:12}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
           <div className="label" style={{margin:0}}>Vídeos a estudar <span style={{color:'var(--text3)',fontWeight:400}}>({(a.ve||[]).filter(id=>!(a.es||[]).includes(id)).length} pendentes)</span></div>
@@ -805,7 +793,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
           </div>;
         })}
       </div>}
- 
+
       <div className="mural-card">
         <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
           <div className="mural-icon">🎬</div>
@@ -864,14 +852,14 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
     </div>
   </div>;
 }
- 
+
 // ── Área do Aluno (link público) ──────────────────────────────────────────────
 function AlunoPublico(){
   const {id}=useParams();
   const [aluno,setAluno]=useState(null);
   const [banco,setBanco]=useState([]);
   const [loading,setLoading]=useState(true);
- 
+
   useEffect(()=>{
     getDoc(doc(db,'alunos',id)).then(d=>{
       if(d.exists())setAluno({id:d.id,...d.data()});
@@ -881,23 +869,23 @@ function AlunoPublico(){
       setBanco(snap.docs.map(d=>({id:d.id,...d.data()})));
     });
   },[id]);
- 
+
   if(loading)return <div className="loading" style={{fontFamily:'Sora,sans-serif'}}><style>{G}</style>Carregando…</div>;
   if(!aluno)return <div className="loading" style={{fontFamily:'Sora,sans-serif'}}><style>{G}</style><div style={{textAlign:'center'}}><div style={{fontSize:32,marginBottom:12}}>♪</div><div>Aluno não encontrado.</div></div></div>;
- 
+
   return <PerfilAluno a={aluno} banco={banco} isDemo={true} onVoltar={()=>{}} onUpdate={()=>{}} onEditar={()=>{}} onModalMural={()=>{}} onEnviarVideo={()=>{}} onExcluir={()=>{}} salvarAluno={()=>{}} modal={null} setModal={()=>{}} alunos={[]}/>;
 }
- 
+
 // ── APP ROOT ──────────────────────────────────────────────────────────────────
 export default function App(){
   const [user,setUser]=useState(undefined);
- 
+
   useEffect(()=>{
     return onAuthStateChanged(auth,u=>setUser(u));
   },[]);
- 
+
   if(user===undefined)return <div className="loading" style={{fontFamily:'Sora,sans-serif'}}><style>{G}</style>Carregando…</div>;
- 
+
   return <BrowserRouter>
     <Routes>
       <Route path="/aluno/:id" element={<AlunoPublico/>}/>
