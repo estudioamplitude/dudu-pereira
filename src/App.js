@@ -793,7 +793,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
             <span style={{fontSize:19,fontWeight:700,letterSpacing:'-.02em'}}>{a.nm}</span>
             {!a.ativo&&<Bd l="Inativo"/>}
           </div>
-          <div style={{fontSize:12,color:'var(--text2)',marginTop:3}}>{isDemo?(<span>{(a.diasAula||[]).length>0?`📅 ${(a.diasAula||[]).join(', ')}`:''}{a.horario?` · 🕐 ${a.horario}`:''}</span>):(<span>{a.pl} · Vencimento dia {a.dia}{(a.diasAula||[]).length>0?` · 📅 ${(a.diasAula||[]).join(', ')}`:''}{a.horario?` · 🕐 ${a.horario}`:''}</span>)}</div>
+          <div style={{fontSize:12,color:'var(--text2)',marginTop:3}}>{(a.diasAula||[]).length>0?`📅 ${(a.diasAula||[]).join(', ')}`:''}{a.horario?` · 🕐 ${a.horario}`:''}</div>
         </div>
         {!isDemo&&<div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
           <button className="btn btn-sm" style={{borderColor:'#4D9EF540',color:'#4D9EF5'}} onClick={()=>{
