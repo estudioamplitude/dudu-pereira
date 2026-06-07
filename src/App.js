@@ -241,6 +241,83 @@ function Login({onLogin}){
 }
 
 // ── PAINEL DO PROFESSOR ───────────────────────────────────────────────────────
+
+// ── Painel de Avisos ──────────────────────────────────────────────────────────
+function PainelAvisos(){
+  const [texto,setTexto]=React.useState('');
+  const [avisos,setAvisos]=React.useState([]);
+  const [salvando,setSalvando]=React.useState(false);
+
+  React.useEffect(()=>{
+    const unsub=onSnapshot(collection(db,'avisos'),snap=>{
+      const lista=snap.docs.map(d=>({id:d.id,...d.data()}));
+      lista.sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0));
+      setAvisos(lista);
+    });
+    return ()=>unsub();
+  },[]);
+
+  async function publicar(){
+    if(!texto.trim())return;
+    setSalvando(true);
+    await setDoc(doc(db,'avisos',Date.now().toString()),{
+      texto:texto.trim(),
+      criadoEm:Date.now(),
+      lido:false,
+    });
+    setTexto('');
+    setSalvando(false);
+  }
+
+  async function excluirAviso(id){
+    if(!window.confirm('Excluir este aviso?'))return;
+    await deleteDoc(doc(db,'avisos',id));
+  }
+
+  function formatData(ts){
+    if(!ts)return '';
+    const d=new Date(ts);
+    return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }
+
+  return <div>
+    <div style={{fontSize:20,fontWeight:700,letterSpacing:'-.02em',marginBottom:4}}>📢 Avisos</div>
+    <div style={{fontSize:12,color:'var(--text2)',marginBottom:'1.2rem'}}>Publique um aviso e ele aparecerá como pop-up para todos os alunos</div>
+
+    <div className="card" style={{marginBottom:'1.2rem'}}>
+      <div className="label">Novo aviso</div>
+      <textarea
+        className="ta"
+        style={{minHeight:100,marginBottom:10,fontSize:13}}
+        placeholder="Escreva o aviso para seus alunos... Ex: Aula cancelada na sexta-feira dia 20/06."
+        value={texto}
+        onChange={e=>setTexto(e.target.value)}
+      />
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <span style={{fontSize:11,color:'var(--text3)'}}>{texto.length} caracteres</span>
+        <button className="btn btn-primary btn-sm" onClick={publicar} disabled={salvando||!texto.trim()}>
+          {salvando?'Publicando…':'📢 Publicar aviso'}
+        </button>
+      </div>
+    </div>
+
+    <div className="label">Avisos publicados ({avisos.length})</div>
+    {avisos.length===0&&<div className="empty">Nenhum aviso publicado ainda.</div>}
+    {avisos.map(a=><div key={a.id} style={{
+      background:'var(--surface)',border:'1px solid var(--border)',
+      borderRadius:'var(--radius)',padding:'12px 16px',marginBottom:8,
+      display:'flex',alignItems:'flex-start',gap:12,
+    }}>
+      <div style={{fontSize:20,flexShrink:0}}>📢</div>
+      <div style={{flex:1}}>
+        <div style={{fontSize:13,color:'var(--text)',lineHeight:1.5,marginBottom:5}}>{a.texto}</div>
+        <div style={{fontSize:10,color:'var(--text3)'}}>{formatData(a.criadoEm)}</div>
+      </div>
+      <button className="btn btn-xs btn-danger" onClick={()=>excluirAviso(a.id)}>× Excluir</button>
+    </div>)}
+  </div>;
+}
+
 function Professor(){
   const [alunos,setAlunos]=useState([]);
   const [banco,setBanco]=useState([]);
@@ -369,6 +446,7 @@ function Professor(){
       <nav className="nav">
         <button className={`nav-btn ${aba==='alunos'?'on':''}`} onClick={()=>setAba('alunos')}>👥 Alunos</button>
         <button className={`nav-btn ${aba==='banco'?'on':''}`} onClick={()=>setAba('banco')}>▶ Vídeos</button>
+        <button className={`nav-btn ${aba==='avisos'?'on':''}`} onClick={()=>setAba('avisos')}>📢 Avisos</button>
         <button className="nav-btn" onClick={()=>signOut(auth)}>Sair</button>
       </nav>
     </div>
@@ -442,6 +520,7 @@ function Professor(){
       </div>}
 
       {aba==='banco'&&<BancoVideos banco={banco} alunos={alunos} modal={modal} setModal={setModal} salvarVideo={salvarVideo} excluirVideo={excluirVideo} atualizarAluno={atualizarAluno}/>}
+      {aba==='avisos'&&<PainelAvisos/>}
     </div>
   </div>;
 }
@@ -873,6 +952,8 @@ function AlunoPublico(){
   const [aluno,setAluno]=useState(null);
   const [banco,setBanco]=useState([]);
   const [loading,setLoading]=useState(true);
+  const [aviso,setAviso]=useState(null);
+  const [avisoFechado,setAvisoFechado]=useState(false);
 
   useEffect(()=>{
     getDoc(doc(db,'alunos',id)).then(d=>{
@@ -882,12 +963,59 @@ function AlunoPublico(){
     getDocs(collection(db,'banco')).then(snap=>{
       setBanco(snap.docs.map(d=>({id:d.id,...d.data()})));
     });
+    // Busca aviso mais recente
+    getDocs(collection(db,'avisos')).then(snap=>{
+      if(snap.empty)return;
+      const lista=snap.docs.map(d=>({id:d.id,...d.data()}));
+      lista.sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0));
+      const ultimo=lista[0];
+      // Verifica se já foi fechado nesta sessão
+      const jaFechou=sessionStorage.getItem('aviso-fechado-'+ultimo.id);
+      if(!jaFechou)setAviso(ultimo);
+    });
   },[id]);
 
   if(loading)return <div className="loading" style={{fontFamily:'Sora,sans-serif'}}><style>{G}</style>Carregando…</div>;
   if(!aluno)return <div className="loading" style={{fontFamily:'Sora,sans-serif'}}><style>{G}</style><div style={{textAlign:'center'}}><div style={{fontSize:32,marginBottom:12}}>♪</div><div>Aluno não encontrado.</div></div></div>;
 
-  return <PerfilAluno a={aluno} banco={banco} isDemo={true} onVoltar={()=>{}} onUpdate={()=>{}} onEditar={()=>{}} onModalMural={()=>{}} onEnviarVideo={()=>{}} onExcluir={()=>{}} salvarAluno={()=>{}} modal={null} setModal={()=>{}} alunos={[]}/>;
+  function fecharAviso(){
+    if(aviso)sessionStorage.setItem('aviso-fechado-'+aviso.id,'1');
+    setAvisoFechado(true);
+  }
+
+  return <div>
+    {aviso&&!avisoFechado&&<div style={{
+      position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',
+      backdropFilter:'blur(8px)',zIndex:999,
+      display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',
+    }}>
+      <div style={{
+        background:'var(--surface)',border:'1px solid var(--border2)',
+        borderRadius:20,padding:'2rem',maxWidth:420,width:'100%',
+        boxShadow:'0 24px 80px rgba(0,0,0,0.6)',
+        position:'relative',overflow:'hidden',
+      }}>
+        <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,#1DBA88,#4D9EF5)'}}/>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
+          <div style={{width:40,height:40,borderRadius:10,background:'#F0A04020',border:'1px solid #F0A04040',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>📢</div>
+          <div>
+            <div style={{fontSize:15,fontWeight:700,color:'var(--text)'}}>Aviso do Professor</div>
+            <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Dudu Pereira</div>
+          </div>
+        </div>
+        <div style={{fontSize:14,color:'var(--text)',lineHeight:1.7,marginBottom:20,padding:'12px',background:'var(--surface2)',borderRadius:10,border:'1px solid var(--border)'}}>
+          {aviso.texto}
+        </div>
+        <button onClick={fecharAviso} style={{
+          width:'100%',padding:'10px',borderRadius:10,
+          background:'linear-gradient(135deg,#1DBA88,#0F8860)',
+          border:'none',color:'#fff',fontWeight:700,fontSize:14,
+          cursor:'pointer',fontFamily:'inherit',
+        }}>Entendido ✓</button>
+      </div>
+    </div>}
+    <PerfilAluno a={aluno} banco={banco} isDemo={true} onVoltar={()=>{}} onUpdate={()=>{}} onEditar={()=>{}} onModalMural={()=>{}} onEnviarVideo={()=>{}} onExcluir={()=>{}} salvarAluno={()=>{}} modal={null} setModal={()=>{}} alunos={[]}/>
+  </div>;
 }
 
 // ── APP ROOT ──────────────────────────────────────────────────────────────────
