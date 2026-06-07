@@ -216,7 +216,7 @@ function Login({onLogin}){
   return <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'var(--bg)'}}>
     <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-xl)',padding:'2.5rem',width:380,boxShadow:'0 24px 80px rgba(0,0,0,.5)'}}>
       <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:'2rem'}}>
-        <div className="logo-icon"><img src={process.env.PUBLIC_URL+"/favicon.png"} alt="Dudu Pereira logo"/></div>
+        <div className="logo-icon"><img src="https://dudu-pereira.vercel.app/favicon.png" alt="Dudu Pereira logo"/></div>
         <div>
           <div style={{fontSize:17,fontWeight:700}}>Dudu Pereira</div>
           <div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.04em'}}>Área do Professor</div>
@@ -363,7 +363,7 @@ function Professor(){
     <style>{G}</style>
     <div className="topbar">
       <div className="logo">
-        <div className="logo-icon"><img src={process.env.PUBLIC_URL+"/favicon.png"} alt="Dudu Pereira logo"/></div>
+        <div className="logo-icon"><img src="https://dudu-pereira.vercel.app/favicon.png" alt="Dudu Pereira logo"/></div>
         <div><div className="logo-name">Dudu Pereira</div><div className="logo-sub">Professor</div></div>
       </div>
       <nav className="nav">
@@ -696,7 +696,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
     <style>{G}</style>
     <div className="topbar">
       <div className="logo">
-        <div className="logo-icon"><img src={process.env.PUBLIC_URL+"/favicon.png"} alt="Dudu Pereira logo"/></div>
+        <div className="logo-icon"><img src="https://dudu-pereira.vercel.app/favicon.png" alt="Dudu Pereira logo"/></div>
         <div><div className="logo-name">Dudu Pereira</div><div className="logo-sub">{isDemo?'Minha área':'Professor'}</div></div>
       </div>
       {!isDemo&&<button className="nav-btn" onClick={()=>signOut(auth)}>Sair</button>}
