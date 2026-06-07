@@ -156,7 +156,7 @@ function Bd({l}){
  
 // ── Pizza SVG ─────────────────────────────────────────────────────────────────
 function Pizza({dist,td}){
-  if(!dist.length)return <div style={{fontSize:12,color:'var(--text3)',padding:'1rem 0'}}>Nenhuma tarefa ativa.</div>;
+  if(!dist.length)return <div style={{fontSize:12,color:'var(--text3)',padding:'1rem 0'}}>Nenhuma estudo ativa.</div>;
   const all=dist.map((t,i)=>({v:t.mins,c:CL[i%CL.length],l:t.tx}));
   const livre=td-dist.reduce((s,t)=>s+t.mins,0);
   if(livre>0)all.push({v:livre,c:'#1E2538',l:'Tempo livre'});
@@ -618,6 +618,43 @@ function BancoVideos({banco,alunos,modal,setModal,salvarVideo,excluirVideo,atual
 }
  
 // ── Perfil do Aluno (professor + aluno) ───────────────────────────────────────
+ 
+// ── Backlog de estudos concluídos ─────────────────────────────────────────────
+function BacklogEstudos({tarefas,isDemo,onToggle,onDelete}){
+  const [aberto,setAberto]=React.useState(false);
+  return <div style={{marginTop:10}}>
+    <button onClick={()=>setAberto(p=>!p)} style={{
+      width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',
+      background:'var(--surface2)',border:'1px solid var(--border)',
+      borderRadius:aberto?'8px 8px 0 0':8,padding:'8px 12px',cursor:'pointer',
+      fontFamily:'inherit',color:'var(--text2)',fontSize:11,fontWeight:600,
+      transition:'all .15s',
+    }}>
+      <div style={{display:'flex',alignItems:'center',gap:7}}>
+        <span style={{fontSize:14}}>✅</span>
+        <span>Estudos concluídos ({tarefas.length})</span>
+      </div>
+      <span style={{fontSize:12,transition:'transform .2s',display:'inline-block',transform:aberto?'rotate(180deg)':'rotate(0deg)'}}>▾</span>
+    </button>
+    {aberto&&<div style={{
+      border:'1px solid var(--border)',borderTop:'none',
+      borderRadius:'0 0 8px 8px',overflow:'hidden',
+      background:'var(--surface)',
+    }}>
+      {tarefas.map((t,i)=><div key={t.id} style={{
+        display:'flex',alignItems:'center',gap:8,padding:'7px 12px',
+        borderBottom:i<tarefas.length-1?'1px solid var(--border)':'none',
+        background:i%2===0?'var(--surface)':'var(--surface2)',
+      }}>
+        <div className="ck ok" onClick={()=>onToggle(t.id)} title="Marcar como pendente">✓</div>
+        <span style={{flex:1,fontSize:12,color:'var(--text3)',textDecoration:'line-through'}}>{t.tx}</span>
+        {!isDemo&&<><span className={`badge ${t.pr==='Alta'?'b-green':t.pr==='Média'?'b-amber':'b-gray'}`} style={{fontSize:9}}>{t.pr}</span>
+        <button onClick={()=>onDelete(t.id)} style={{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:14,padding:'0 2px',lineHeight:1}}>×</button></>}
+      </div>)}
+    </div>}
+  </div>;
+}
+ 
 function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onExcluir,salvarAluno,modal,setModal,alunos}){
   const [openV,setOpenV]=useState(null);
   const [openMural,setOpenMural]=useState(null);
@@ -649,7 +686,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
   const NewTaskBar=()=>{
     const [tx,setTx]=useState('');const [pr,setPr]=useState('Alta');
     return <div style={{display:'flex',gap:5,marginTop:10}}>
-      <input className="inp" value={tx} onChange={e=>setTx(e.target.value)} placeholder="Nova tarefa... (Enter)" style={{flex:1,fontSize:12}} onKeyDown={e=>{if(e.key==='Enter'&&tx.trim()){addT(tx.trim(),pr);setTx('');}}}/>
+      <input className="inp" value={tx} onChange={e=>setTx(e.target.value)} placeholder="Novo estudo... (Enter)" style={{flex:1,fontSize:12}} onKeyDown={e=>{if(e.key==='Enter'&&tx.trim()){addT(tx.trim(),pr);setTx('');}}}/>
       <select className="sel" style={{fontSize:11}} value={pr} onChange={e=>setPr(e.target.value)}><option>Alta</option><option>Média</option><option>Baixa</option></select>
       <button className="btn btn-primary btn-sm" onClick={()=>{if(tx.trim()){addT(tx.trim(),pr);setTx('');}}}>+ Add</button>
     </div>;
@@ -716,16 +753,17 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
  
         <div className="card">
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-            <div className="label" style={{margin:0}}>Tarefas da semana</div>
+            <div className="label" style={{margin:0}}>Estudos da semana</div>
             {!isDemo&&(a.tf||[]).some(t=>t.feita)&&<button className="btn btn-xs btn-danger" onClick={limT}>🗑 Limpar</button>}
           </div>
-          {(a.tf||[]).length===0&&<div style={{fontSize:12,color:'var(--text3)',padding:'0.5rem 0'}}>Nenhuma tarefa ainda.</div>}
-          {(a.tf||[]).map(t=><div key={t.id} className="trow">
+          {(a.tf||[]).filter(t=>!t.feita).length===0&&<div style={{fontSize:12,color:'var(--text3)',padding:'0.5rem 0'}}>Nenhum estudo pendente.</div>}
+          {(a.tf||[]).filter(t=>!t.feita).map(t=><div key={t.id} className="trow">
             <div className={`ck ${t.feita?'ok':''}`} onClick={()=>togT(t.id)}>{t.feita?'✓':''}</div>
-            <span style={{flex:1,fontSize:12,textDecoration:t.feita?'line-through':'none',color:t.feita?'var(--text3)':'var(--text)'}}>{t.tx}</span>
+            <span style={{flex:1,fontSize:12,color:'var(--text)'}}>{t.tx}</span>
             {!isDemo?<><select className="sel" style={{fontSize:10,padding:'2px 5px'}} value={t.pr} onChange={e=>sP2(t.id,e.target.value)}><option>Alta</option><option>Média</option><option>Baixa</option></select><button onClick={()=>delT(t.id)} style={{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:16,padding:'0 2px',lineHeight:1}}>×</button></>:<Bd l={t.pr}/>}
           </div>)}
           {!isDemo&&<NewTaskBar/>}
+          {(a.tf||[]).filter(t=>t.feita).length>0&&<BacklogEstudos tarefas={(a.tf||[]).filter(t=>t.feita)} isDemo={isDemo} onToggle={togT} onDelete={delT}/>}
           {!isDemo&&<div style={{marginTop:12}}>
             <div className="label">Observações internas</div>
             <textarea className="ta" defaultValue={a.ob} onBlur={e=>onUpdate({ob:e.target.value})}/>
