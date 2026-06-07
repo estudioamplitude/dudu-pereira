@@ -537,7 +537,9 @@ function ModalVideo({video,onSalvar,onClose}){
  
 // ── Modal Mural ───────────────────────────────────────────────────────────────
 function ModalMural({aluno,onSalvar,onClose}){
-  const [form,setForm]=useState({tt:'',url:'',data:''});
+  const hoje=new Date();
+  const dataHoje=hoje.toLocaleDateString('pt-BR',{month:'short',year:'numeric'}).replace('.','').replace(/^\w/,m=>m.toUpperCase());
+  const [form,setForm]=useState({tt:'',url:'',data:dataHoje});
   const [prev,setPrev]=useState(null);
   const f=k=>v=>setForm(p=>({...p,[k]:v}));
   return <Modal title={`🎬 Adicionar ao mural de ${aluno.nm.split(' ')[0]}`} onClose={onClose}>
@@ -772,23 +774,54 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
           <div><div style={{fontSize:14,fontWeight:700}}>Mural do Aluno</div><div style={{fontSize:11,color:'var(--text3)',marginTop:1}}>Vídeos das músicas aprendidas</div></div>
           {!isDemo&&<button className="btn btn-sm" style={{marginLeft:'auto',borderColor:'#D4A84340',color:'#D4A843'}} onClick={onModalMural}>+ Adicionar</button>}
         </div>
-        {(a.mural||[]).length===0?<div style={{border:'1px dashed var(--border2)',borderRadius:'var(--radius)',padding:'1.5rem',textAlign:'center',color:'var(--text3)',fontSize:12}}>
-          <div style={{fontSize:24,marginBottom:8}}>🎵</div>
+        {(a.mural||[]).length===0?<div style={{border:'1px dashed var(--border2)',borderRadius:'var(--radius)',padding:'2rem',textAlign:'center',color:'var(--text3)',fontSize:12}}>
+          <div style={{fontSize:28,marginBottom:8}}>🎵</div>
           <div>Nenhum vídeo no mural ainda.</div>
-        </div>:(a.mural||[]).map(v=><div key={v.id} className="mural-item">
-          <div style={{display:'flex',alignItems:'center',gap:12,padding:'10px 12px',cursor:'pointer'}} onClick={()=>setOpenMural(p=>p===v.id?null:v.id)}>
-            <div className="mural-thumbimg"><img src={yTh(v.yt)} loading="lazy" alt=""/></div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:700,marginBottom:4}}>{v.tt}</div>
-              <div style={{display:'flex',alignItems:'center',gap:7}}><Bd l="🏆 Aprendida"/><span style={{fontSize:10,color:'var(--text3)'}}>{v.data||''}</span></div>
-            </div>
-            <span style={{color:'var(--text3)',fontSize:18}}>{openMural===v.id?'▲':'▶'}</span>
+        </div>:<div>
+          {/* Grade estilo Instagram */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:3,borderRadius:12,overflow:'hidden',marginBottom:openMural?12:0}}>
+            {(a.mural||[]).map(v=><div key={v.id} onClick={()=>setOpenMural(p=>p===v.id?null:v.id)} style={{
+              position:'relative',aspectRatio:'1',cursor:'pointer',overflow:'hidden',
+              background:'var(--surface3)',
+            }}>
+              <img src={yTh(v.yt)} loading="lazy" alt={v.tt} style={{width:'100%',height:'100%',objectFit:'cover',transition:'transform .2s'}}
+                onMouseEnter={e=>e.target.style.transform='scale(1.05)'}
+                onMouseLeave={e=>e.target.style.transform='scale(1)'}
+              />
+              {/* Overlay hover */}
+              <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0)',transition:'background .2s',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,opacity:0}}
+                onMouseEnter={e=>{e.currentTarget.style.background='rgba(0,0,0,0.6)';e.currentTarget.style.opacity=1;}}
+                onMouseLeave={e=>{e.currentTarget.style.background='rgba(0,0,0,0)';e.currentTarget.style.opacity=0;}}
+              >
+                <span style={{fontSize:20}}>▶</span>
+                <span style={{fontSize:10,color:'#fff',fontWeight:600,textAlign:'center',padding:'0 8px'}}>{v.tt.length>30?v.tt.slice(0,30)+'…':v.tt}</span>
+              </div>
+              {/* Selecionado */}
+              {openMural===v.id&&<div style={{position:'absolute',inset:0,border:'3px solid var(--primary)',borderRadius:2,pointerEvents:'none'}}/>}
+              {/* Badge topo */}
+              <div style={{position:'absolute',top:5,left:5}}>
+                <span style={{fontSize:9,fontWeight:700,background:'#D4A843',color:'#000',borderRadius:4,padding:'2px 6px'}}>🏆</span>
+              </div>
+              {/* Data */}
+              <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,0.7))',padding:'12px 5px 4px',fontSize:9,color:'rgba(255,255,255,0.8)',textAlign:'center'}}>
+                {v.data}
+              </div>
+            </div>)}
           </div>
-          {openMural===v.id&&<div style={{padding:'0 12px 12px'}}><iframe src={yEm(v.yt)} style={{width:'100%',height:220,borderRadius:8,border:'none'}} allowFullScreen title={v.tt}/></div>}
-          {!isDemo&&<div style={{display:'flex',padding:'6px 12px',borderTop:'1px solid var(--border)',background:'var(--surface)'}}>
-            <button className="btn btn-xs btn-danger" onClick={()=>remMural(v.id)}>× Remover</button>
-          </div>}
-        </div>)}
+          {/* Player do selecionado */}
+          {openMural&&(()=>{const v=(a.mural||[]).find(x=>x.id===openMural);if(!v)return null;return(
+            <div style={{background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:12,overflow:'hidden',marginTop:4}}>
+              <iframe src={yEm(v.yt)} style={{width:'100%',height:220,border:'none',display:'block'}} allowFullScreen title={v.tt}/>
+              <div style={{padding:'10px 12px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,marginBottom:3}}>{v.tt}</div>
+                  <div style={{display:'flex',alignItems:'center',gap:7}}><Bd l="🏆 Aprendida"/><span style={{fontSize:10,color:'var(--text3)'}}>{v.data}</span></div>
+                </div>
+                {!isDemo&&<button className="btn btn-xs btn-danger" onClick={()=>{remMural(v.id);setOpenMural(null);}}>× Remover</button>}
+              </div>
+            </div>
+          );})()}
+        </div>}
       </div>
     </div>
   </div>;
