@@ -730,6 +730,25 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
       </div>
 
       <div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:12}}>
+
+        <div className="card">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+            <div className="label" style={{margin:0}}>Estudos da semana</div>
+            {!isDemo&&(a.tf||[]).some(t=>t.feita)&&<button className="btn btn-xs btn-danger" onClick={limT}>🗑 Limpar</button>}
+          </div>
+          {(a.tf||[]).filter(t=>!t.feita).length===0&&<div style={{fontSize:12,color:'var(--text3)',padding:'0.5rem 0'}}>Nenhum estudo pendente.</div>}
+          {(a.tf||[]).filter(t=>!t.feita).map(t=><div key={t.id} className="trow">
+            <div className={`ck ${t.feita?'ok':''}`} onClick={()=>togT(t.id)}>{t.feita?'✓':''}</div>
+            <span style={{flex:1,fontSize:12,color:'var(--text)'}}>{t.tx}</span>
+            {!isDemo?<><select className="sel" style={{fontSize:10,padding:'2px 5px'}} value={t.pr} onChange={e=>sP2(t.id,e.target.value)}><option>Alta</option><option>Média</option><option>Baixa</option></select><button onClick={()=>delT(t.id)} style={{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:16,padding:'0 2px',lineHeight:1}}>×</button></>:<Bd l={t.pr}/>}
+          </div>)}
+          {!isDemo&&<NewTaskBar/>}
+          {(a.tf||[]).filter(t=>t.feita).length>0&&<BacklogEstudos tarefas={(a.tf||[]).filter(t=>t.feita)} isDemo={isDemo} onToggle={togT} onDelete={delT}/>}
+          {!isDemo&&<div style={{marginTop:12}}>
+            <div className="label">Observações internas</div>
+            <textarea className="ta" defaultValue={a.ob} onBlur={e=>onUpdate({ob:e.target.value})}/>
+          </div>}
+        </div>
         <div className="card">
           <div className="label">Mensalidade</div>
           <div className="banner" style={{background:bn.bg,color:bn.c,border:`1px solid ${bn.bc}`}}>{bn.m}</div>
@@ -749,25 +768,20 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
               </div>
             </div>;
           })}
-        </div>
 
-        <div className="card">
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-            <div className="label" style={{margin:0}}>Estudos da semana</div>
-            {!isDemo&&(a.tf||[]).some(t=>t.feita)&&<button className="btn btn-xs btn-danger" onClick={limT}>🗑 Limpar</button>}
+          <div style={{marginTop:14,paddingTop:12,borderTop:'1px solid var(--border)'}}>
+            <div className="label">Chave Pix</div>
+            <div style={{background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:8,padding:'10px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:'var(--text)',letterSpacing:'.02em'}}>07341182954</div>
+                <div style={{fontSize:10,color:'var(--text3)',marginTop:3}}>Maurilio Eduardo Pereira</div>
+              </div>
+              <button onClick={()=>{navigator.clipboard.writeText('07341182954').then(()=>{const b=document.getElementById('pix-copied');if(b){b.textContent='Copiado!';b.style.color='var(--primary)';setTimeout(()=>{b.textContent='Copiar';b.style.color='var(--text2)';},2000);}});}} style={{background:'var(--surface3)',border:'1px solid var(--border2)',borderRadius:6,padding:'5px 12px',cursor:'pointer',fontFamily:'inherit',fontWeight:600,fontSize:11,color:'var(--text2)',flexShrink:0,display:'flex',alignItems:'center',gap:5,transition:'all .15s'}} id="pix-btn">
+                <i className="ti ti-copy" style={{fontSize:13}} aria-hidden="true"></i>
+                <span id="pix-copied">Copiar</span>
+              </button>
+            </div>
           </div>
-          {(a.tf||[]).filter(t=>!t.feita).length===0&&<div style={{fontSize:12,color:'var(--text3)',padding:'0.5rem 0'}}>Nenhum estudo pendente.</div>}
-          {(a.tf||[]).filter(t=>!t.feita).map(t=><div key={t.id} className="trow">
-            <div className={`ck ${t.feita?'ok':''}`} onClick={()=>togT(t.id)}>{t.feita?'✓':''}</div>
-            <span style={{flex:1,fontSize:12,color:'var(--text)'}}>{t.tx}</span>
-            {!isDemo?<><select className="sel" style={{fontSize:10,padding:'2px 5px'}} value={t.pr} onChange={e=>sP2(t.id,e.target.value)}><option>Alta</option><option>Média</option><option>Baixa</option></select><button onClick={()=>delT(t.id)} style={{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',fontSize:16,padding:'0 2px',lineHeight:1}}>×</button></>:<Bd l={t.pr}/>}
-          </div>)}
-          {!isDemo&&<NewTaskBar/>}
-          {(a.tf||[]).filter(t=>t.feita).length>0&&<BacklogEstudos tarefas={(a.tf||[]).filter(t=>t.feita)} isDemo={isDemo} onToggle={togT} onDelete={delT}/>}
-          {!isDemo&&<div style={{marginTop:12}}>
-            <div className="label">Observações internas</div>
-            <textarea className="ta" defaultValue={a.ob} onBlur={e=>onUpdate({ob:e.target.value})}/>
-          </div>}
         </div>
       </div>
 
