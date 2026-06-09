@@ -970,68 +970,52 @@ function Metronomo(){
   const TEMPOS=[[30,'Larghissimo'],[40,'Grave'],[50,'Largo'],[60,'Larghetto'],[66,'Adagio'],[76,'Andante'],[88,'Andantino'],[100,'Moderato'],[112,'Allegretto'],[120,'Allegro'],[140,'Vivace'],[160,'Presto'],[200,'Prestissimo'],[241,'']];
   function tname(b){for(let i=0;i<TEMPOS.length-1;i++)if(b>=TEMPOS[i][0]&&b<TEMPOS[i+1][0])return TEMPOS[i][1];return '';}
 
-  // Usa HTMLAudioElement — única forma confiável em iOS (funciona em modo silencioso)
-  // Sons gerados como data URI de WAV sintético
-  function makeClickWav(freq, dur, vol){
-    const sr=22050, len=Math.ceil(sr*dur), buf=new ArrayBuffer(44+len*2);
-    const v=new DataView(buf);
-    const ws=(s,o)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
-    ws('RIFF',0);v.setUint32(4,36+len*2,true);ws('WAVE',8);ws('fmt ',12);
-    v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
-    v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);
-    v.setUint16(32,2,true);v.setUint16(34,16,true);
-    ws('data',36);v.setUint32(40,len*2,true);
-    for(let i=0;i<len;i++){
-      const t=i/sr;
-      const env=Math.exp(-t*30);
-      // Tom principal + harmônico — estilo click de DAW
-      const s=(Math.sin(2*Math.PI*freq*t)*0.7+Math.sin(2*Math.PI*freq*2*t)*0.3)*env*vol;
-      v.setInt16(44+i*2,Math.max(-32767,Math.min(32767,s*32767)),true);
-    }
-    const bytes=new Uint8Array(buf);
-    let bin='';for(let i=0;i<bytes.length;i++)bin+=String.fromCharCode(bytes[i]);
-    return 'data:audio/wav;base64,'+btoa(bin);
-  }
-
-  // Cria os elementos de áudio uma vez
-  const audioAccRef=React.useRef(null);
-  const audioBeatRef=React.useRef(null);
-  React.useEffect(()=>{
-    audioAccRef.current=new Audio(makeClickWav(1000,0.06,0.95));
-    audioBeatRef.current=new Audio(makeClickWav(660,0.07,0.75));
-    audioAccRef.current.load();
-    audioBeatRef.current.load();
-  },[]);
-
+  // Click estilo Pro Tools — três osciladores, compatível desktop e mobile
   function scheduleClick(time, ac){
-    // Para iOS: usa setTimeout baseado no delay até o momento do click
-    const ctx=actxRef.current;
-    const delay=ctx?(time-ctx.currentTime)*1000:0;
-    setTimeout(()=>{
-      const el=ac?audioAccRef.current:audioBeatRef.current;
-      if(!el)return;
-      // Clona o elemento para permitir sobreposição em BPM alto
-      const clone=el.cloneNode();
-      clone.volume=1.0;
-      clone.play().catch(()=>{});
-    },Math.max(0,delay));
+    const ctx=actxRef.current; if(!ctx) return;
+    const freq=ac?1000:660;
+
+    const comp=ctx.createDynamicsCompressor();
+    comp.threshold.setValueAtTime(-3,time);
+    comp.knee.setValueAtTime(2,time);
+    comp.ratio.setValueAtTime(12,time);
+    comp.attack.setValueAtTime(0.0001,time);
+    comp.release.setValueAtTime(0.08,time);
+    comp.connect(ctx.destination);
+
+    const o1=ctx.createOscillator(),g1=ctx.createGain();
+    o1.type='sine'; o1.frequency.value=freq;
+    g1.gain.setValueAtTime(ac?1.0:0.8,time);
+    g1.gain.exponentialRampToValueAtTime(0.001,time+(ac?0.045:0.065));
+    o1.connect(g1); g1.connect(comp);
+    o1.start(time); o1.stop(time+0.08);
+
+    const o2=ctx.createOscillator(),g2=ctx.createGain();
+    o2.type='sine'; o2.frequency.value=freq*2;
+    g2.gain.setValueAtTime(ac?0.6:0.4,time);
+    g2.gain.exponentialRampToValueAtTime(0.001,time+(ac?0.02:0.03));
+    o2.connect(g2); g2.connect(comp);
+    o2.start(time); o2.stop(time+0.04);
+
+    const o3=ctx.createOscillator(),g3=ctx.createGain();
+    o3.type='triangle'; o3.frequency.value=freq*0.5;
+    g3.gain.setValueAtTime(ac?0.4:0.25,time);
+    g3.gain.exponentialRampToValueAtTime(0.001,time+(ac?0.03:0.04));
+    o3.connect(g3); g3.connect(comp);
+    o3.start(time); o3.stop(time+0.05);
   }
 
   function scheduler(){
     if(!runRef.current) return;
-    const ctx=actxRef.current;
-    const now=ctx?ctx.currentTime:(Date.now()/1000);
-    const lookahead=0.12;
+    const ctx=actxRef.current; if(!ctx) return;
+    const lookahead=0.1;
     const interval=60/bpmRef.current;
-    while(nextRef.current < now + lookahead){
+    while(nextRef.current < ctx.currentTime + lookahead){
       const ac=bidxRef.current===0;
       scheduleClick(nextRef.current, ac);
-      const delay=Math.max(0,(nextRef.current-now)*1000-20);
+      const delay=Math.max(0,(nextRef.current-ctx.currentTime)*1000-20);
       const capBidx=bidxRef.current;
-      setTimeout(()=>{
-        if(!runRef.current) return;
-        setBidx(capBidx);
-      }, delay);
+      setTimeout(()=>{if(!runRef.current)return;setBidx(capBidx);},delay);
       bidxRef.current=(bidxRef.current+1)%compRef.current;
       nextRef.current+=interval;
     }
@@ -1039,17 +1023,17 @@ function Metronomo(){
   }
 
   function start(){
-    // Tenta criar AudioContext para timing de precisão; fallback para Date.now()
-    try{
-      if(!actxRef.current) actxRef.current=new(window.AudioContext||window.webkitAudioContext)();
-      if(actxRef.current.state==='suspended') actxRef.current.resume();
-    }catch(e){}
-    bidxRef.current=0; setBidx(0);
-    const now=actxRef.current?actxRef.current.currentTime:(Date.now()/1000);
-    nextRef.current=now+0.05;
-    runRef.current=true;
-    setRunning(true);
-    scheduler();
+    if(!actxRef.current) actxRef.current=new(window.AudioContext||window.webkitAudioContext)();
+    const ctx=actxRef.current;
+    const doStart=()=>{
+      bidxRef.current=0; setBidx(0);
+      nextRef.current=ctx.currentTime+0.05;
+      runRef.current=true;
+      setRunning(true);
+      scheduler();
+    };
+    if(ctx.state==='suspended') ctx.resume().then(doStart);
+    else doStart();
   }
 
   function stop(){
