@@ -970,20 +970,16 @@ function Metronomo(){
 
   function playClick(ac){
     try{
-      if(!actxRef.current) actxRef.current=new(window.AudioContext||window.webkitAudioContext)();
       const ctx=actxRef.current;
-      const doPlay=()=>{
-        const o=ctx.createOscillator(),g=ctx.createGain();
-        o.connect(g);g.connect(ctx.destination);
-        o.type='sine';o.frequency.value=ac?1400:900;
-        const t=ctx.currentTime;
-        g.gain.setValueAtTime(ac?0.7:0.35,t);
-        g.gain.exponentialRampToValueAtTime(0.001,t+0.055);
-        o.start(t);o.stop(t+0.06);
-      };
-      if(ctx.state==='suspended'){ctx.resume().then(doPlay);}
-      else{doPlay();}
-    }catch(e){console.warn('Audio error:',e);}
+      if(!ctx)return;
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.type='sine';o.frequency.value=ac?1400:900;
+      const t=ctx.currentTime;
+      g.gain.setValueAtTime(ac?0.7:0.35,t);
+      g.gain.exponentialRampToValueAtTime(0.001,t+0.055);
+      o.start(t);o.stop(t+0.06);
+    }catch(e){console.warn('Audio:',e);}
   }
   function swing(angle,ms){
     const rod=document.getElementById('met-rod');if(!rod)return;
@@ -1002,10 +998,19 @@ function Metronomo(){
     sideRef.current*=-1;
   }
   function start(){
-    bidxRef.current=0;sideRef.current=1;setBidx(0);
-    const rod=document.getElementById('met-rod');
-    if(rod){rod.style.transition='none';rod.style.transform='rotate(-30deg)';}
-    setTimeout(()=>{beat();tidRef.current=setInterval(beat,60000/bpmRef.current);setRunning(true);},30);
+    // Cria/resume AudioContext AQUI — dentro do evento de clique do usuário
+    if(!actxRef.current){
+      actxRef.current=new(window.AudioContext||window.webkitAudioContext)();
+    }
+    const ctx=actxRef.current;
+    const doStart=()=>{
+      bidxRef.current=0;sideRef.current=1;setBidx(0);
+      const rod=document.getElementById('met-rod');
+      if(rod){rod.style.transition='none';rod.style.transform='rotate(-30deg)';}
+      setTimeout(()=>{beat();tidRef.current=setInterval(beat,60000/bpmRef.current);setRunning(true);},30);
+    };
+    if(ctx.state==='suspended'){ctx.resume().then(doStart);}
+    else{doStart();}
   }
   function stop(){
     clearInterval(tidRef.current);tidRef.current=null;
