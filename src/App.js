@@ -953,121 +953,148 @@ const BG='#080A0F',SURF='#0F1218',SURF2='#161B25',BORDER='#1E2538',BORDER2='#283
 const CTEXT='#E8EBF5',TEXT2='#7A85A8',TEXT3='#3E4A68',PRIMARY='#1DBA88',CRED='#F05050';
 
 // ── Metrônomo ─────────────────────────────────────────────────────────────────
-function Metronomo(){
+function Metronomo({onVoltar}){
   const [bpm,setBpmS]=React.useState(120);
   const [comp,setComp]=React.useState(4);
   const [running,setRunning]=React.useState(false);
   const [bidx,setBidx]=React.useState(0);
   const tapRef=React.useRef([]);
-  const tidRef=React.useRef(null);
   const actxRef=React.useRef(null);
-  const sideRef=React.useRef(1);
-  const bidxRef=React.useRef(0);
   const bpmRef=React.useRef(120);
   const compRef=React.useRef(4);
+  const bidxRef=React.useRef(0);
+  const nextRef=React.useRef(0); // próximo tempo agendado (ctx.currentTime)
+  const rafRef=React.useRef(null);
+  const runRef=React.useRef(false);
+
   const TEMPOS=[[30,'Larghissimo'],[40,'Grave'],[50,'Largo'],[60,'Larghetto'],[66,'Adagio'],[76,'Andante'],[88,'Andantino'],[100,'Moderato'],[112,'Allegretto'],[120,'Allegro'],[140,'Vivace'],[160,'Presto'],[200,'Prestissimo'],[241,'']];
   function tname(b){for(let i=0;i<TEMPOS.length-1;i++)if(b>=TEMPOS[i][0]&&b<TEMPOS[i+1][0])return TEMPOS[i][1];return '';}
 
-  function playClick(ac){
-    try{
-      const ctx=actxRef.current;
-      if(!ctx)return;
-      const o=ctx.createOscillator(),g=ctx.createGain();
-      o.connect(g);g.connect(ctx.destination);
-      o.type='sine';o.frequency.value=ac?1400:900;
-      const t=ctx.currentTime;
-      g.gain.setValueAtTime(ac?0.7:0.35,t);
-      g.gain.exponentialRampToValueAtTime(0.001,t+0.055);
-      o.start(t);o.stop(t+0.06);
-    }catch(e){console.warn('Audio:',e);}
+  // Agenda clicks com antecedência usando Web Audio scheduling
+  // Funciona em iOS/Safari — setInterval não é confiável para áudio
+  function scheduleClick(time, ac){
+    const ctx=actxRef.current; if(!ctx) return;
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type='sine'; o.frequency.value=ac?1400:900;
+    g.gain.setValueAtTime(ac?0.7:0.35, time);
+    g.gain.exponentialRampToValueAtTime(0.001, time+0.055);
+    o.start(time); o.stop(time+0.06);
   }
-  function swing(angle,ms){
-    const rod=document.getElementById('met-rod');if(!rod)return;
-    rod.style.transition=`transform ${ms}ms ease-in-out`;
-    rod.style.transform=`rotate(${angle}deg)`;
+
+  function scheduler(){
+    if(!runRef.current) return;
+    const ctx=actxRef.current; if(!ctx) return;
+    const lookahead=0.1; // agenda 100ms à frente
+    const interval=60/bpmRef.current;
+    while(nextRef.current < ctx.currentTime + lookahead){
+      const ac=bidxRef.current===0;
+      scheduleClick(nextRef.current, ac);
+      // Atualiza visual aproximadamente no tempo certo
+      const delay=Math.max(0,(nextRef.current-ctx.currentTime)*1000-20);
+      const capBidx=bidxRef.current;
+      setTimeout(()=>{
+        if(!runRef.current) return;
+        setBidx(capBidx);
+      }, delay);
+      bidxRef.current=(bidxRef.current+1)%compRef.current;
+      nextRef.current+=interval;
+    }
+    rafRef.current=requestAnimationFrame(scheduler);
   }
-  function beat(){
-    const ac=bidxRef.current===0;
-    playClick(ac);
-    const ball=document.getElementById('met-ball');
-    if(ball){ball.style.background=ac?CRED:PRIMARY;setTimeout(()=>{if(ball)ball.style.background=PRIMARY;},100);}
-    const next=(bidxRef.current+1)%compRef.current;
-    bidxRef.current=next;setBidx(next);
-    const ms=60000/bpmRef.current;
-    swing(sideRef.current*30,ms*0.92);
-    sideRef.current*=-1;
-  }
+
   function start(){
-    // Cria/resume AudioContext AQUI — dentro do evento de clique do usuário
+    // Cria AudioContext dentro do evento de clique — obrigatório em iOS
     if(!actxRef.current){
       actxRef.current=new(window.AudioContext||window.webkitAudioContext)();
     }
     const ctx=actxRef.current;
     const doStart=()=>{
-      bidxRef.current=0;sideRef.current=1;setBidx(0);
-      const rod=document.getElementById('met-rod');
-      if(rod){rod.style.transition='none';rod.style.transform='rotate(-30deg)';}
-      setTimeout(()=>{beat();tidRef.current=setInterval(beat,60000/bpmRef.current);setRunning(true);},30);
+      bidxRef.current=0; setBidx(0);
+      nextRef.current=ctx.currentTime+0.05;
+      runRef.current=true;
+      setRunning(true);
+      scheduler();
     };
-    if(ctx.state==='suspended'){ctx.resume().then(doStart);}
-    else{doStart();}
+    if(ctx.state==='suspended') ctx.resume().then(doStart);
+    else doStart();
   }
+
   function stop(){
-    clearInterval(tidRef.current);tidRef.current=null;
-    const rod=document.getElementById('met-rod');
-    if(rod){rod.style.transition='transform 400ms ease-out';rod.style.transform='rotate(0deg)';}
-    setRunning(false);setBidx(0);bidxRef.current=0;
+    runRef.current=false;
+    cancelAnimationFrame(rafRef.current);
+    setRunning(false); setBidx(0); bidxRef.current=0;
   }
+
   function toggle(){running?stop():start();}
+
   function updateBpm(v){
     const nb=Math.max(30,Math.min(240,Math.round(v)));
-    setBpmS(nb);bpmRef.current=nb;
-    if(tidRef.current){clearInterval(tidRef.current);tidRef.current=setInterval(beat,60000/nb);}
+    setBpmS(nb); bpmRef.current=nb;
   }
-  function setCompasso(n){setComp(n);compRef.current=n;bidxRef.current=0;setBidx(0);}
+
+  function setCompasso(n){
+    setComp(n); compRef.current=n; bidxRef.current=0; setBidx(0);
+  }
+
   function doTap(){
-    const now=Date.now(),arr=tapRef.current;
-    if(arr.length&&now-arr[arr.length-1]>2500)arr.length=0;
-    arr.push(now);if(arr.length>6)arr.shift();
+    const now=Date.now(), arr=tapRef.current;
+    if(arr.length&&now-arr[arr.length-1]>2500) arr.length=0;
+    arr.push(now); if(arr.length>6) arr.shift();
     if(arr.length>=2){
-      const gaps=[];for(let i=1;i<arr.length;i++)gaps.push(arr[i]-arr[i-1]);
+      const gaps=[]; for(let i=1;i<arr.length;i++) gaps.push(arr[i]-arr[i-1]);
       updateBpm(Math.round(60000/(gaps.reduce((a,b)=>a+b)/gaps.length)));
     }
   }
-  React.useEffect(()=>()=>{clearInterval(tidRef.current);},[]);
+
+  React.useEffect(()=>()=>{runRef.current=false;cancelAnimationFrame(rafRef.current);},[]);
+
   const sb={border:`1px solid ${BORDER2}`,background:'transparent',color:CTEXT,cursor:'pointer',fontFamily:'Sora,sans-serif'};
+
   return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'1.25rem',padding:'1.5rem 0'}}>
-    <div style={{position:'relative',width:100,height:185}}>
-      <div style={{width:10,height:10,borderRadius:'50%',background:BORDER2,position:'absolute',top:0,left:'50%',transform:'translateX(-50%)'}}/>
-      <div id="met-rod" style={{width:3,height:160,background:BORDER2,borderRadius:2,position:'absolute',top:5,left:'calc(50% - 1.5px)',transformOrigin:'top center',transform:'rotate(0deg)'}}>
-        <div id="met-ball" style={{width:24,height:24,borderRadius:'50%',background:PRIMARY,position:'absolute',bottom:-12,left:'50%',transform:'translateX(-50%)',transition:'background .08s'}}/>
-      </div>
-    </div>
     <div>
       <div style={{display:'flex',alignItems:'center',gap:16}}>
-        <button onClick={()=>updateBpm(bpm-1)} style={{...sb,width:38,height:38,borderRadius:'50%',fontSize:22,display:'flex',alignItems:'center',justifyContent:'center'}}>−</button>
+        <button onClick={()=>updateBpm(bpm-1)} style={{...sb,width:42,height:42,borderRadius:'50%',fontSize:24,display:'flex',alignItems:'center',justifyContent:'center'}}>−</button>
         <div style={{textAlign:'center'}}>
-          <div style={{fontSize:52,fontWeight:700,color:CTEXT,letterSpacing:'-.03em',lineHeight:1,minWidth:90}}>{bpm}</div>
+          <div style={{fontSize:64,fontWeight:700,color:CTEXT,letterSpacing:'-.03em',lineHeight:1,minWidth:110}}>{bpm}</div>
           <div style={{fontSize:10,color:TEXT3,textTransform:'uppercase',letterSpacing:'.07em',marginTop:3}}>BPM</div>
         </div>
-        <button onClick={()=>updateBpm(bpm+1)} style={{...sb,width:38,height:38,borderRadius:'50%',fontSize:22,display:'flex',alignItems:'center',justifyContent:'center'}}>+</button>
+        <button onClick={()=>updateBpm(bpm+1)} style={{...sb,width:42,height:42,borderRadius:'50%',fontSize:24,display:'flex',alignItems:'center',justifyContent:'center'}}>+</button>
       </div>
-      <div style={{fontSize:12,color:TEXT2,textAlign:'center',marginTop:4}}>{tname(bpm)}</div>
+      <div style={{fontSize:13,color:TEXT2,textAlign:'center',marginTop:6}}>{tname(bpm)}</div>
     </div>
-    <input type="range" min="30" max="240" value={bpm} step="1" style={{width:'100%',maxWidth:300,accentColor:PRIMARY}} onChange={e=>updateBpm(+e.target.value)}/>
+
+    <input type="range" min="30" max="240" value={bpm} step="1"
+      style={{width:'100%',maxWidth:320,accentColor:PRIMARY}}
+      onChange={e=>updateBpm(+e.target.value)}/>
+
     <div style={{display:'flex',gap:6}}>
-      {[2,4,3,6].map(n=><button key={n} onClick={()=>setCompasso(n)} style={{...sb,padding:'5px 13px',borderRadius:20,border:`1px solid ${comp===n?PRIMARY:BORDER2}`,background:comp===n?PRIMARY:'transparent',color:comp===n?'#fff':TEXT2,fontSize:12}}>{n===6?'6/8':`${n}/4`}</button>)}
+      {[2,4,3,6].map(n=><button key={n} onClick={()=>setCompasso(n)} style={{...sb,padding:'6px 16px',borderRadius:20,border:`1px solid ${comp===n?PRIMARY:BORDER2}`,background:comp===n?PRIMARY:'transparent',color:comp===n?'#fff':TEXT2,fontSize:13}}>{n===6?'6/8':`${n}/4`}</button>)}
     </div>
-    <div style={{display:'flex',gap:8}}>
-      {Array.from({length:comp},(_,i)=><div key={i} style={{width:30,height:30,borderRadius:'50%',border:`1.5px solid ${i===bidx?(i===0?CRED:PRIMARY):BORDER2}`,background:i===bidx?(i===0?CRED:PRIMARY):SURF2,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:i===bidx?'#fff':TEXT3}}>{i+1}</div>)}
+
+    <div style={{display:'flex',gap:10}}>
+      {Array.from({length:comp},(_,i)=><div key={i} style={{
+        width:36,height:36,borderRadius:'50%',
+        border:`1.5px solid ${i===bidx?(i===0?CRED:PRIMARY):BORDER2}`,
+        background:i===bidx?(i===0?CRED:PRIMARY):SURF2,
+        display:'flex',alignItems:'center',justifyContent:'center',
+        fontSize:12,color:i===bidx?'#fff':TEXT3,
+        fontWeight:i===bidx?700:400,
+        transition:'background .08s,border-color .08s',
+      }}>{i+1}</div>)}
     </div>
-    <div style={{display:'flex',gap:10,alignItems:'center'}}>
-      <button onClick={doTap} style={{...sb,padding:'6px 16px',borderRadius:20,fontSize:12,color:TEXT2}}>Tap</button>
-      <button onClick={toggle} style={{width:56,height:56,borderRadius:'50%',border:'none',background:PRIMARY,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,cursor:'pointer'}}>
+
+    <div style={{display:'flex',gap:12,alignItems:'center',marginTop:8}}>
+      <button onClick={doTap} style={{...sb,padding:'8px 20px',borderRadius:20,fontSize:13,color:TEXT2}}>Tap</button>
+      <button onClick={toggle} style={{width:64,height:64,borderRadius:'50%',border:'none',background:running?CRED:PRIMARY,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,cursor:'pointer',transition:'background .2s'}}>
         <i className={`ti ${running?'ti-player-pause':'ti-player-play'}`} aria-hidden="true"/>
       </button>
-      <button onClick={()=>updateBpm(120)} style={{...sb,padding:'6px 16px',borderRadius:20,fontSize:12,color:TEXT2}}>Reset</button>
+      <button onClick={()=>updateBpm(120)} style={{...sb,padding:'8px 20px',borderRadius:20,fontSize:13,color:TEXT2}}>Reset</button>
     </div>
+
+    {onVoltar&&<button onClick={onVoltar} style={{...sb,padding:'8px 20px',borderRadius:20,fontSize:13,color:TEXT2,marginTop:4,display:'inline-flex',alignItems:'center',gap:6}}>
+      <i className="ti ti-arrow-left" aria-hidden="true"/> Voltar
+    </button>}
   </div>;
 }
 
@@ -1086,7 +1113,7 @@ function Ferramentas({onVoltar}){
 
   if(pagina==='metronomo') return <div style={{fontFamily:'Sora,sans-serif',background:BG,minHeight:'100vh'}}>
     {topbar('Metrônomo',()=>setPagina('lista'),'Ferramentas')}
-    <div style={{maxWidth:500,margin:'0 auto',padding:'0 1.5rem'}}><Metronomo/></div>
+    <div style={{maxWidth:500,margin:'0 auto',padding:'0 1.5rem'}}><Metronomo onVoltar={()=>setPagina('lista')}/></div>
   </div>;
 
   return <div style={{fontFamily:'Sora,sans-serif',background:BG,minHeight:'100vh'}}>
