@@ -970,16 +970,45 @@ function Metronomo({onVoltar}){
   const TEMPOS=[[30,'Larghissimo'],[40,'Grave'],[50,'Largo'],[60,'Larghetto'],[66,'Adagio'],[76,'Andante'],[88,'Andantino'],[100,'Moderato'],[112,'Allegretto'],[120,'Allegro'],[140,'Vivace'],[160,'Presto'],[200,'Prestissimo'],[241,'']];
   function tname(b){for(let i=0;i<TEMPOS.length-1;i++)if(b>=TEMPOS[i][0]&&b<TEMPOS[i+1][0])return TEMPOS[i][1];return '';}
 
-  // Agenda clicks com antecedência usando Web Audio scheduling
-  // Funciona em iOS/Safari — setInterval não é confiável para áudio
+  // Click seco percussivo estilo Google Metronome — ruído filtrado com ataque rápido
   function scheduleClick(time, ac){
     const ctx=actxRef.current; if(!ctx) return;
-    const o=ctx.createOscillator(), g=ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.type='sine'; o.frequency.value=ac?1400:900;
-    g.gain.setValueAtTime(ac?0.7:0.35, time);
-    g.gain.exponentialRampToValueAtTime(0.001, time+0.055);
-    o.start(time); o.stop(time+0.06);
+
+    // Buffer de ruído branco curto
+    const bufLen=ctx.sampleRate*0.04;
+    const buf=ctx.createBuffer(1,bufLen,ctx.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<bufLen;i++) data[i]=(Math.random()*2-1);
+
+    const src=ctx.createBufferSource();
+    src.buffer=buf;
+
+    // Filtro passa-banda — acento mais agudo, tempo fraco mais grave
+    const filter=ctx.createBiquadFilter();
+    filter.type='bandpass';
+    filter.frequency.value=ac?2200:1100;
+    filter.Q.value=ac?0.8:1.2;
+
+    // Gain com envelope percussivo rápido — ataque imediato, decay curto
+    const gain=ctx.createGain();
+    gain.gain.setValueAtTime(0,time);
+    gain.gain.linearRampToValueAtTime(ac?1.0:0.75, time+0.002);
+    gain.gain.exponentialRampToValueAtTime(0.001, time+(ac?0.035:0.05));
+
+    // Compressor para maximizar volume sem distorção
+    const comp=ctx.createDynamicsCompressor();
+    comp.threshold.setValueAtTime(-6,time);
+    comp.knee.setValueAtTime(3,time);
+    comp.ratio.setValueAtTime(20,time);
+    comp.attack.setValueAtTime(0.001,time);
+    comp.release.setValueAtTime(0.05,time);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(comp);
+    comp.connect(ctx.destination);
+    src.start(time);
+    src.stop(time+0.06);
   }
 
   function scheduler(){
