@@ -1134,6 +1134,7 @@ function AlunoPublico({initPage}){
   const [loading,setLoading]=useState(true);
   const [aviso,setAviso]=useState(null);
   const [avisoFechado,setAvisoFechado]=useState(false);
+  const [paginaAluno,setPaginaAluno]=useState(initPage||'perfil');
 
   useEffect(()=>{
     getDoc(doc(db,'alunos',id)).then(d=>{
@@ -1162,8 +1163,6 @@ function AlunoPublico({initPage}){
     if(aviso)sessionStorage.setItem('aviso-fechado-'+aviso.id,'1');
     setAvisoFechado(true);
   }
-
-  const [paginaAluno,setPaginaAluno]=React.useState(initPage||'perfil');
 
   if(paginaAluno==='ferramentas') return <Ferramentas onVoltar={()=>setPaginaAluno('perfil')}/>;
 
