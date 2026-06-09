@@ -953,7 +953,7 @@ const BG='#080A0F',SURF='#0F1218',SURF2='#161B25',BORDER='#1E2538',BORDER2='#283
 const CTEXT='#E8EBF5',TEXT2='#7A85A8',TEXT3='#3E4A68',PRIMARY='#1DBA88',CRED='#F05050';
 
 // ── Metrônomo ─────────────────────────────────────────────────────────────────
-function Metronomo({onVoltar}){
+function Metronomo(){
   const [bpm,setBpmS]=React.useState(120);
   const [comp,setComp]=React.useState(4);
   const [running,setRunning]=React.useState(false);
@@ -1121,9 +1121,6 @@ function Metronomo({onVoltar}){
       <button onClick={()=>updateBpm(120)} style={{...sb,padding:'8px 20px',borderRadius:20,fontSize:13,color:TEXT2}}>Reset</button>
     </div>
 
-    {onVoltar&&<button onClick={onVoltar} style={{...sb,padding:'8px 20px',borderRadius:20,fontSize:13,color:TEXT2,marginTop:4,display:'inline-flex',alignItems:'center',gap:6}}>
-      <i className="ti ti-arrow-left" aria-hidden="true"/> Voltar
-    </button>}
   </div>;
 }
 
@@ -1141,8 +1138,8 @@ function Ferramentas({onVoltar}){
   </div>;
 
   if(pagina==='metronomo') return <div style={{fontFamily:'Sora,sans-serif',background:BG,minHeight:'100vh'}}>
-    {topbar('Metrônomo',()=>setPagina('lista'),'Ferramentas')}
-    <div style={{maxWidth:500,margin:'0 auto',padding:'0 1.5rem'}}><Metronomo onVoltar={()=>setPagina('lista')}/></div>
+    {topbar('Metrônomo',()=>setPagina('lista'),'← Ferramentas')}
+    <div style={{maxWidth:500,margin:'0 auto',padding:'0 1.5rem'}}><Metronomo/></div>
   </div>;
 
   return <div style={{fontFamily:'Sora,sans-serif',background:BG,minHeight:'100vh'}}>
