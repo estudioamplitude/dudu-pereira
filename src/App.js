@@ -734,7 +734,7 @@ function BacklogEstudos({tarefas,isDemo,onToggle,onDelete}){
   </div>;
 }
 
-function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onExcluir,salvarAluno,modal,setModal,alunos}){
+function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onExcluir,salvarAluno,modal,setModal,alunos,onFerramentas}){
   const [openV,setOpenV]=useState(null);
   const [openMural,setOpenMural]=useState(null);
 
@@ -779,6 +779,9 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
         <div><div className="logo-name">Dudu Pereira</div><div className="logo-sub">{isDemo?'Minha área':'Professor'}</div></div>
       </div>
       {!isDemo&&<button className="nav-btn" onClick={()=>signOut(auth)}>Sair</button>}
+      {isDemo&&onFerramentas&&<button className="nav-btn" onClick={onFerramentas} style={{color:'#1DBA88',borderColor:'#1DBA8840',background:'#1DBA8812'}}>
+        <i className="ti ti-tools" aria-hidden="true"/> Ferramentas
+      </button>}
     </div>
 
     {modal&&!isDemo&&<ModalDespachante modal={modal} setModal={setModal} alunos={alunos||[]} banco={banco} salvarAluno={salvarAluno||((dados,id)=>{})} salvarVideo={()=>{}} atualizarAluno={async(id,d)=>onUpdate(d)}/>}
@@ -1197,14 +1200,7 @@ function AlunoPublico({initPage}){
         }}>Entendido ✓</button>
       </div>
     </div>}
-    <div style={{position:'relative'}}>
-      <div style={{position:'absolute',top:14,right:'2rem',zIndex:10}}>
-        <button onClick={()=>setPaginaAluno('ferramentas')} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 14px',borderRadius:20,border:'1px solid #1DBA8840',background:'#1DBA8812',color:'#1DBA88',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'Sora,sans-serif'}}>
-          <i className="ti ti-tools" aria-hidden="true"/> Ferramentas
-        </button>
-      </div>
-      <PerfilAluno a={aluno} banco={banco} isDemo={true} onVoltar={()=>{}} onUpdate={()=>{}} onEditar={()=>{}} onModalMural={()=>{}} onEnviarVideo={()=>{}} onExcluir={()=>{}} salvarAluno={()=>{}} modal={null} setModal={()=>{}} alunos={[]}/>
-    </div>
+    <PerfilAluno a={aluno} banco={banco} isDemo={true} onVoltar={()=>{}} onUpdate={()=>{}} onEditar={()=>{}} onModalMural={()=>{}} onEnviarVideo={()=>{}} onExcluir={()=>{}} salvarAluno={()=>{}} modal={null} setModal={()=>{}} alunos={[]} onFerramentas={()=>setPaginaAluno('ferramentas')}/>
   </div>;
 }
 
