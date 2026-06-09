@@ -970,11 +970,11 @@ function Metronomo(){
   const TEMPOS=[[30,'Larghissimo'],[40,'Grave'],[50,'Largo'],[60,'Larghetto'],[66,'Adagio'],[76,'Andante'],[88,'Andantino'],[100,'Moderato'],[112,'Allegretto'],[120,'Allegro'],[140,'Vivace'],[160,'Presto'],[200,'Prestissimo'],[241,'']];
   function tname(b){for(let i=0;i<TEMPOS.length-1;i++)if(b>=TEMPOS[i][0]&&b<TEMPOS[i+1][0])return TEMPOS[i][1];return '';}
 
-  // Click estilo Pro Tools / Cubase — dois osciladores sobrepostos, impulso limpo
+  // Click estilo Pro Tools — dois osciladores, sem buffer, compatível com iOS
   function scheduleClick(time, ac){
     const ctx=actxRef.current; if(!ctx) return;
+    const freq=ac?1000:660;
 
-    // Compressor master — volume máximo sem clip
     const comp=ctx.createDynamicsCompressor();
     comp.threshold.setValueAtTime(-3,time);
     comp.knee.setValueAtTime(2,time);
@@ -983,36 +983,29 @@ function Metronomo(){
     comp.release.setValueAtTime(0.08,time);
     comp.connect(ctx.destination);
 
-    // Oscilador 1 — tom principal (acento: 1000Hz / tempo: 600Hz)
-    const freq1=ac?1000:600;
-    const o1=ctx.createOscillator();
-    const g1=ctx.createGain();
-    o1.type='sine'; o1.frequency.value=freq1;
-    g1.gain.setValueAtTime(ac?1.0:0.85,time);
-    g1.gain.exponentialRampToValueAtTime(0.001,time+(ac?0.04:0.06));
+    // Tom principal
+    const o1=ctx.createOscillator(),g1=ctx.createGain();
+    o1.type='sine'; o1.frequency.value=freq;
+    g1.gain.setValueAtTime(ac?1.0:0.8,time);
+    g1.gain.exponentialRampToValueAtTime(0.001,time+(ac?0.045:0.065));
     o1.connect(g1); g1.connect(comp);
-    o1.start(time); o1.stop(time+0.07);
+    o1.start(time); o1.stop(time+0.08);
 
-    // Oscilador 2 — harmônico (oitava acima) para brilho e definição
-    const o2=ctx.createOscillator();
-    const g2=ctx.createGain();
-    o2.type='sine'; o2.frequency.value=freq1*2;
-    g2.gain.setValueAtTime(ac?0.5:0.35,time);
+    // Harmônico oitava acima — brilho e definição
+    const o2=ctx.createOscillator(),g2=ctx.createGain();
+    o2.type='sine'; o2.frequency.value=freq*2;
+    g2.gain.setValueAtTime(ac?0.6:0.4,time);
     g2.gain.exponentialRampToValueAtTime(0.001,time+(ac?0.02:0.03));
     o2.connect(g2); g2.connect(comp);
     o2.start(time); o2.stop(time+0.04);
 
-    // Transiente de ataque — click de 2ms para dar o impacto inicial
-    const bufLen=Math.ceil(ctx.sampleRate*0.002);
-    const buf=ctx.createBuffer(1,bufLen,ctx.sampleRate);
-    const data=buf.getChannelData(0);
-    for(let i=0;i<bufLen;i++) data[i]=(1-i/bufLen)*(Math.random()*2-1);
-    const src=ctx.createBufferSource();
-    src.buffer=buf;
-    const g3=ctx.createGain();
-    g3.gain.setValueAtTime(ac?0.8:0.5,time);
-    src.connect(g3); g3.connect(comp);
-    src.start(time); src.stop(time+0.003);
+    // Terceiro harmônico — corpo do som
+    const o3=ctx.createOscillator(),g3=ctx.createGain();
+    o3.type='triangle'; o3.frequency.value=freq*0.5;
+    g3.gain.setValueAtTime(ac?0.4:0.25,time);
+    g3.gain.exponentialRampToValueAtTime(0.001,time+(ac?0.03:0.04));
+    o3.connect(g3); g3.connect(comp);
+    o3.start(time); o3.stop(time+0.05);
   }
 
   function scheduler(){
