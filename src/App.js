@@ -949,6 +949,8 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
   </div>;
 }
 
+const BG='#080A0F',SURF='#0F1218',SURF2='#161B25',BORDER='#1E2538',BORDER2='#28304A';
+const CTEXT='#E8EBF5',TEXT2='#7A85A8',TEXT3='#3E4A68',PRIMARY='#1DBA88',CRED='#F05050';
 
 // ── Metrônomo ─────────────────────────────────────────────────────────────────
 function Metronomo(){
@@ -956,135 +958,109 @@ function Metronomo(){
   const [comp,setComp]=React.useState(4);
   const [running,setRunning]=React.useState(false);
   const [bidx,setBidx]=React.useState(0);
-  const [tapTimes]=React.useState([]);
+  const tapRef=React.useRef([]);
   const tidRef=React.useRef(null);
   const actxRef=React.useRef(null);
   const sideRef=React.useRef(1);
   const bidxRef=React.useRef(0);
   const bpmRef=React.useRef(120);
   const compRef=React.useRef(4);
-
   const TEMPOS=[[30,'Larghissimo'],[40,'Grave'],[50,'Largo'],[60,'Larghetto'],[66,'Adagio'],[76,'Andante'],[88,'Andantino'],[100,'Moderato'],[112,'Allegretto'],[120,'Allegro'],[140,'Vivace'],[160,'Presto'],[200,'Prestissimo'],[241,'']];
   function tname(b){for(let i=0;i<TEMPOS.length-1;i++)if(b>=TEMPOS[i][0]&&b<TEMPOS[i+1][0])return TEMPOS[i][1];return '';}
 
-  function initA(){if(!actxRef.current)actxRef.current=new(window.AudioContext||window.webkitAudioContext)();}
+  function getCtx(){
+    if(!actxRef.current) actxRef.current=new(window.AudioContext||window.webkitAudioContext)();
+    if(actxRef.current.state==='suspended') actxRef.current.resume();
+    return actxRef.current;
+  }
   function playClick(ac){
-    const ctx=actxRef.current;if(!ctx)return;
+    const ctx=getCtx();
     const o=ctx.createOscillator(),g=ctx.createGain();
     o.connect(g);g.connect(ctx.destination);
-    o.frequency.value=ac?1400:900;
+    o.type='sine';o.frequency.value=ac?1400:900;
     const t=ctx.currentTime;
-    g.gain.setValueAtTime(ac?.7:.35,t);
-    g.gain.exponentialRampToValueAtTime(0.001,t+.055);
-    o.start(t);o.stop(t+.06);
+    g.gain.setValueAtTime(ac?0.7:0.35,t);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.055);
+    o.start(t);o.stop(t+0.06);
   }
-
   function swing(angle,ms){
-    const rod=document.getElementById('met-rod');
-    if(!rod)return;
+    const rod=document.getElementById('met-rod');if(!rod)return;
     rod.style.transition=`transform ${ms}ms ease-in-out`;
     rod.style.transform=`rotate(${angle}deg)`;
   }
-
   function beat(){
     const ac=bidxRef.current===0;
     playClick(ac);
     const ball=document.getElementById('met-ball');
-    if(ball){ball.style.background=ac?'#E24B4A':'#1DBA88';setTimeout(()=>{if(ball)ball.style.background='#1DBA88';},100);}
-    setBidx(b=>{
-      const nb=(b+1)%compRef.current;
-      bidxRef.current=nb;
-      return b;
-    });
+    if(ball){ball.style.background=ac?CRED:PRIMARY;setTimeout(()=>{if(ball)ball.style.background=PRIMARY;},100);}
+    const next=(bidxRef.current+1)%compRef.current;
+    bidxRef.current=next;setBidx(next);
     const ms=60000/bpmRef.current;
     swing(sideRef.current*30,ms*0.92);
     sideRef.current*=-1;
-    bidxRef.current=(bidxRef.current)%compRef.current;
   }
-
   function start(){
-    initA();
-    bidxRef.current=0;sideRef.current=1;
-    setBidx(0);
+    getCtx();
+    bidxRef.current=0;sideRef.current=1;setBidx(0);
     const rod=document.getElementById('met-rod');
     if(rod){rod.style.transition='none';rod.style.transform='rotate(-30deg)';}
-    setTimeout(()=>{
-      beat();
-      tidRef.current=setInterval(beat,60000/bpmRef.current);
-      setRunning(true);
-    },30);
+    setTimeout(()=>{beat();tidRef.current=setInterval(beat,60000/bpmRef.current);setRunning(true);},30);
   }
-
   function stop(){
     clearInterval(tidRef.current);tidRef.current=null;
     const rod=document.getElementById('met-rod');
     if(rod){rod.style.transition='transform 400ms ease-out';rod.style.transform='rotate(0deg)';}
     setRunning(false);setBidx(0);bidxRef.current=0;
   }
-
   function toggle(){running?stop():start();}
-
   function updateBpm(v){
     const nb=Math.max(30,Math.min(240,Math.round(v)));
     setBpmS(nb);bpmRef.current=nb;
     if(tidRef.current){clearInterval(tidRef.current);tidRef.current=setInterval(beat,60000/nb);}
   }
-
-  function setCompasso(n){
-    setComp(n);compRef.current=n;bidxRef.current=0;setBidx(0);
-  }
-
+  function setCompasso(n){setComp(n);compRef.current=n;bidxRef.current=0;setBidx(0);}
   function doTap(){
-    const now=Date.now();
-    if(now-(tapTimes[tapTimes.length-1]||0)>2500)tapTimes.length=0;
-    tapTimes.push(now);
-    if(tapTimes.length>6)tapTimes.shift();
-    if(tapTimes.length>=2){
-      const gaps=[];for(let i=1;i<tapTimes.length;i++)gaps.push(tapTimes[i]-tapTimes[i-1]);
+    const now=Date.now(),arr=tapRef.current;
+    if(arr.length&&now-arr[arr.length-1]>2500)arr.length=0;
+    arr.push(now);if(arr.length>6)arr.shift();
+    if(arr.length>=2){
+      const gaps=[];for(let i=1;i<arr.length;i++)gaps.push(arr[i]-arr[i-1]);
       updateBpm(Math.round(60000/(gaps.reduce((a,b)=>a+b)/gaps.length)));
     }
   }
-
   React.useEffect(()=>()=>{clearInterval(tidRef.current);},[]);
-
-  const dots=Array.from({length:comp},(_,i)=>i);
-
+  const sb={border:`1px solid ${BORDER2}`,background:'transparent',color:CTEXT,cursor:'pointer',fontFamily:'Sora,sans-serif'};
   return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'1.25rem',padding:'1.5rem 0'}}>
     <div style={{position:'relative',width:100,height:185}}>
-      <div style={{width:10,height:10,borderRadius:'50%',background:'var(--text2)',position:'absolute',top:0,left:'50%',transform:'translateX(-50%)'}}/>
-      <div id="met-rod" style={{width:3,height:160,background:'var(--border2)',borderRadius:2,position:'absolute',top:5,left:'calc(50% - 1.5px)',transformOrigin:'top center',transform:'rotate(0deg)'}}>
-        <div id="met-ball" style={{width:24,height:24,borderRadius:'50%',background:'#1DBA88',position:'absolute',bottom:-12,left:'50%',transform:'translateX(-50%)',transition:'background .08s'}}/>
+      <div style={{width:10,height:10,borderRadius:'50%',background:BORDER2,position:'absolute',top:0,left:'50%',transform:'translateX(-50%)'}}/>
+      <div id="met-rod" style={{width:3,height:160,background:BORDER2,borderRadius:2,position:'absolute',top:5,left:'calc(50% - 1.5px)',transformOrigin:'top center',transform:'rotate(0deg)'}}>
+        <div id="met-ball" style={{width:24,height:24,borderRadius:'50%',background:PRIMARY,position:'absolute',bottom:-12,left:'50%',transform:'translateX(-50%)',transition:'background .08s'}}/>
       </div>
     </div>
-
     <div>
       <div style={{display:'flex',alignItems:'center',gap:16}}>
-        <button onClick={()=>updateBpm(bpm-1)} style={{width:38,height:38,borderRadius:'50%',border:'1px solid var(--border2)',background:'transparent',color:'var(--text)',fontSize:22,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'inherit'}}>−</button>
+        <button onClick={()=>updateBpm(bpm-1)} style={{...sb,width:38,height:38,borderRadius:'50%',fontSize:22,display:'flex',alignItems:'center',justifyContent:'center'}}>−</button>
         <div style={{textAlign:'center'}}>
-          <div style={{fontSize:52,fontWeight:700,color:'var(--text)',letterSpacing:'-.03em',lineHeight:1,minWidth:90,textAlign:'center'}}>{bpm}</div>
-          <div style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.07em',marginTop:3}}>BPM</div>
+          <div style={{fontSize:52,fontWeight:700,color:CTEXT,letterSpacing:'-.03em',lineHeight:1,minWidth:90}}>{bpm}</div>
+          <div style={{fontSize:10,color:TEXT3,textTransform:'uppercase',letterSpacing:'.07em',marginTop:3}}>BPM</div>
         </div>
-        <button onClick={()=>updateBpm(bpm+1)} style={{width:38,height:38,borderRadius:'50%',border:'1px solid var(--border2)',background:'transparent',color:'var(--text)',fontSize:22,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'inherit'}}>+</button>
+        <button onClick={()=>updateBpm(bpm+1)} style={{...sb,width:38,height:38,borderRadius:'50%',fontSize:22,display:'flex',alignItems:'center',justifyContent:'center'}}>+</button>
       </div>
-      <div style={{fontSize:12,color:'var(--text2)',textAlign:'center',marginTop:4}}>{tname(bpm)}</div>
+      <div style={{fontSize:12,color:TEXT2,textAlign:'center',marginTop:4}}>{tname(bpm)}</div>
     </div>
-
-    <input type="range" min="30" max="240" value={bpm} step="1" style={{width:'100%',maxWidth:300}} onChange={e=>updateBpm(+e.target.value)}/>
-
+    <input type="range" min="30" max="240" value={bpm} step="1" style={{width:'100%',maxWidth:300,accentColor:PRIMARY}} onChange={e=>updateBpm(+e.target.value)}/>
     <div style={{display:'flex',gap:6}}>
-      {[2,4,3,6].map(n=><button key={n} onClick={()=>setCompasso(n)} style={{padding:'5px 13px',borderRadius:20,border:`1px solid ${comp===n?'#1DBA88':'var(--border)'}`,background:comp===n?'#1DBA88':'transparent',color:comp===n?'#fff':'var(--text2)',fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>{n===6?'6/8':`${n}/4`}</button>)}
+      {[2,4,3,6].map(n=><button key={n} onClick={()=>setCompasso(n)} style={{...sb,padding:'5px 13px',borderRadius:20,border:`1px solid ${comp===n?PRIMARY:BORDER2}`,background:comp===n?PRIMARY:'transparent',color:comp===n?'#fff':TEXT2,fontSize:12}}>{n===6?'6/8':`${n}/4`}</button>)}
     </div>
-
     <div style={{display:'flex',gap:8}}>
-      {dots.map(i=><div key={i} style={{width:30,height:30,borderRadius:'50%',border:`1.5px solid ${i===bidx?(i===0?'#E24B4A':'#1DBA88'):'var(--border2)'}`,background:i===bidx?(i===0?'#E24B4A':'#1DBA88'):'var(--surface2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:i===bidx?'#fff':'var(--text3)'}}>{i+1}</div>)}
+      {Array.from({length:comp},(_,i)=><div key={i} style={{width:30,height:30,borderRadius:'50%',border:`1.5px solid ${i===bidx?(i===0?CRED:PRIMARY):BORDER2}`,background:i===bidx?(i===0?CRED:PRIMARY):SURF2,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:i===bidx?'#fff':TEXT3}}>{i+1}</div>)}
     </div>
-
     <div style={{display:'flex',gap:10,alignItems:'center'}}>
-      <button onClick={doTap} style={{padding:'6px 16px',borderRadius:20,border:'1px solid var(--border2)',background:'transparent',color:'var(--text2)',fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Tap</button>
-      <button onClick={toggle} style={{width:56,height:56,borderRadius:'50%',border:'none',background:'#1DBA88',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,cursor:'pointer'}}>
+      <button onClick={doTap} style={{...sb,padding:'6px 16px',borderRadius:20,fontSize:12,color:TEXT2}}>Tap</button>
+      <button onClick={toggle} style={{width:56,height:56,borderRadius:'50%',border:'none',background:PRIMARY,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,cursor:'pointer'}}>
         <i className={`ti ${running?'ti-player-pause':'ti-player-play'}`} aria-hidden="true"/>
       </button>
-      <button onClick={()=>updateBpm(120)} style={{padding:'6px 16px',borderRadius:20,border:'1px solid var(--border2)',background:'transparent',color:'var(--text2)',fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Reset</button>
+      <button onClick={()=>updateBpm(120)} style={{...sb,padding:'6px 16px',borderRadius:20,fontSize:12,color:TEXT2}}>Reset</button>
     </div>
   </div>;
 }
@@ -1092,38 +1068,43 @@ function Metronomo(){
 // ── Ferramentas ────────────────────────────────────────────────────────────────
 function Ferramentas({onVoltar}){
   const [pagina,setPagina]=React.useState('lista');
-  if(pagina==='metronomo') return <div style={{padding:'1.5rem'}}>
-    <button onClick={()=>setPagina('lista')} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:13,color:'var(--text2)',border:'none',background:'none',cursor:'pointer',fontFamily:'inherit',marginBottom:'1rem',padding:0}}>
-      <i className="ti ti-arrow-left" aria-hidden="true"/> Ferramentas
+  const topbar=(title,onBack,backLabel)=><div style={{background:SURF,borderBottom:`1px solid ${BORDER}`,padding:'0 1.5rem',height:56,display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
+    <div style={{display:'flex',alignItems:'center',gap:10}}>
+      <img src="https://dudu-pereira.vercel.app/favicon.ico.png" alt="" style={{width:30,height:30,borderRadius:8}}/>
+      <span style={{fontSize:15,fontWeight:700,color:CTEXT,fontFamily:'Sora,sans-serif'}}>{title}</span>
+    </div>
+    <button onClick={onBack} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:TEXT2,border:`1px solid ${BORDER2}`,background:'transparent',cursor:'pointer',fontFamily:'Sora,sans-serif',padding:'5px 12px',borderRadius:20}}>
+      <i className="ti ti-arrow-left" aria-hidden="true"/> {backLabel}
     </button>
-    <Metronomo/>
   </div>;
 
-  return <div style={{padding:'1.5rem'}}>
-    <button onClick={onVoltar} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:13,color:'var(--text2)',border:'none',background:'none',cursor:'pointer',fontFamily:'inherit',marginBottom:'1rem',padding:0}}>
-      <i className="ti ti-arrow-left" aria-hidden="true"/> Voltar
-    </button>
-    <div style={{fontSize:18,fontWeight:700,marginBottom:4}}>Ferramentas</div>
-    <div style={{fontSize:12,color:'var(--text2)',marginBottom:'1.25rem'}}>Recursos para seu estudo</div>
+  if(pagina==='metronomo') return <div style={{fontFamily:'Sora,sans-serif',background:BG,minHeight:'100vh'}}>
+    {topbar('Metrônomo',()=>setPagina('lista'),'Ferramentas')}
+    <div style={{maxWidth:500,margin:'0 auto',padding:'0 1.5rem'}}><Metronomo/></div>
+  </div>;
 
-    <div onClick={()=>setPagina('metronomo')} style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',padding:'1rem 1.1rem',display:'flex',alignItems:'center',gap:14,cursor:'pointer',marginBottom:8,transition:'border-color .15s'}}>
-      <div style={{width:44,height:44,borderRadius:10,background:'#1DBA8818',border:'1px solid #1DBA8825',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,color:'#1DBA88',flexShrink:0}}>
-        <i className="ti ti-clock" aria-hidden="true"/>
+  return <div style={{fontFamily:'Sora,sans-serif',background:BG,minHeight:'100vh'}}>
+    {topbar('Ferramentas',onVoltar,'Voltar')}
+    <div style={{maxWidth:600,margin:'0 auto',padding:'1.5rem'}}>
+      <div style={{fontSize:12,color:TEXT2,marginBottom:'1.25rem'}}>Recursos para seu estudo</div>
+      <div onClick={()=>setPagina('metronomo')} style={{background:SURF,border:`1px solid ${BORDER}`,borderRadius:16,padding:'1rem 1.1rem',display:'flex',alignItems:'center',gap:14,cursor:'pointer',marginBottom:8}}>
+        <div style={{width:44,height:44,borderRadius:10,background:`${PRIMARY}18`,border:`1px solid ${PRIMARY}25`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,color:PRIMARY,flexShrink:0}}>
+          <i className="ti ti-clock" aria-hidden="true"/>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:14,fontWeight:700,color:CTEXT,marginBottom:3}}>Metrônomo</div>
+          <div style={{fontSize:11,color:TEXT2}}>BPM · Compasso · Click · Pêndulo visual</div>
+        </div>
+        <i className="ti ti-chevron-right" style={{fontSize:16,color:TEXT3}} aria-hidden="true"/>
       </div>
-      <div style={{flex:1}}>
-        <div style={{fontSize:14,fontWeight:700,marginBottom:3}}>Metrônomo</div>
-        <div style={{fontSize:11,color:'var(--text2)'}}>BPM · Compasso · Click · Pêndulo visual</div>
-      </div>
-      <i className="ti ti-chevron-right" style={{fontSize:16,color:'var(--text3)'}} aria-hidden="true"/>
-    </div>
-
-    <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',padding:'1rem 1.1rem',display:'flex',alignItems:'center',gap:14,opacity:.45}}>
-      <div style={{width:44,height:44,borderRadius:10,background:'#7B68EE18',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,color:'#7B68EE',flexShrink:0}}>
-        <i className="ti ti-music" aria-hidden="true"/>
-      </div>
-      <div>
-        <div style={{fontSize:14,fontWeight:700,marginBottom:3}}>Afinador</div>
-        <div style={{fontSize:11,color:'var(--text2)'}}>Em breve</div>
+      <div style={{background:SURF,border:`1px solid ${BORDER}`,borderRadius:16,padding:'1rem 1.1rem',display:'flex',alignItems:'center',gap:14,opacity:.45}}>
+        <div style={{width:44,height:44,borderRadius:10,background:'#7B68EE18',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,color:'#7B68EE',flexShrink:0}}>
+          <i className="ti ti-music" aria-hidden="true"/>
+        </div>
+        <div>
+          <div style={{fontSize:14,fontWeight:700,color:CTEXT,marginBottom:3}}>Afinador</div>
+          <div style={{fontSize:11,color:TEXT2}}>Em breve</div>
+        </div>
       </div>
     </div>
   </div>;
