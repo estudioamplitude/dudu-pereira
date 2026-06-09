@@ -968,20 +968,22 @@ function Metronomo(){
   const TEMPOS=[[30,'Larghissimo'],[40,'Grave'],[50,'Largo'],[60,'Larghetto'],[66,'Adagio'],[76,'Andante'],[88,'Andantino'],[100,'Moderato'],[112,'Allegretto'],[120,'Allegro'],[140,'Vivace'],[160,'Presto'],[200,'Prestissimo'],[241,'']];
   function tname(b){for(let i=0;i<TEMPOS.length-1;i++)if(b>=TEMPOS[i][0]&&b<TEMPOS[i+1][0])return TEMPOS[i][1];return '';}
 
-  function getCtx(){
-    if(!actxRef.current) actxRef.current=new(window.AudioContext||window.webkitAudioContext)();
-    if(actxRef.current.state==='suspended') actxRef.current.resume();
-    return actxRef.current;
-  }
   function playClick(ac){
-    const ctx=getCtx();
-    const o=ctx.createOscillator(),g=ctx.createGain();
-    o.connect(g);g.connect(ctx.destination);
-    o.type='sine';o.frequency.value=ac?1400:900;
-    const t=ctx.currentTime;
-    g.gain.setValueAtTime(ac?0.7:0.35,t);
-    g.gain.exponentialRampToValueAtTime(0.001,t+0.055);
-    o.start(t);o.stop(t+0.06);
+    try{
+      if(!actxRef.current) actxRef.current=new(window.AudioContext||window.webkitAudioContext)();
+      const ctx=actxRef.current;
+      const doPlay=()=>{
+        const o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.type='sine';o.frequency.value=ac?1400:900;
+        const t=ctx.currentTime;
+        g.gain.setValueAtTime(ac?0.7:0.35,t);
+        g.gain.exponentialRampToValueAtTime(0.001,t+0.055);
+        o.start(t);o.stop(t+0.06);
+      };
+      if(ctx.state==='suspended'){ctx.resume().then(doPlay);}
+      else{doPlay();}
+    }catch(e){console.warn('Audio error:',e);}
   }
   function swing(angle,ms){
     const rod=document.getElementById('met-rod');if(!rod)return;
@@ -1000,7 +1002,6 @@ function Metronomo(){
     sideRef.current*=-1;
   }
   function start(){
-    getCtx();
     bidxRef.current=0;sideRef.current=1;setBidx(0);
     const rod=document.getElementById('met-rod');
     if(rod){rod.style.transition='none';rod.style.transform='rotate(-30deg)';}
