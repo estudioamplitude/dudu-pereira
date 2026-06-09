@@ -946,8 +946,188 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
   </div>;
 }
 
+
+// ── Metrônomo ─────────────────────────────────────────────────────────────────
+function Metronomo(){
+  const [bpm,setBpmS]=React.useState(120);
+  const [comp,setComp]=React.useState(4);
+  const [running,setRunning]=React.useState(false);
+  const [bidx,setBidx]=React.useState(0);
+  const [tapTimes]=React.useState([]);
+  const tidRef=React.useRef(null);
+  const actxRef=React.useRef(null);
+  const sideRef=React.useRef(1);
+  const bidxRef=React.useRef(0);
+  const bpmRef=React.useRef(120);
+  const compRef=React.useRef(4);
+
+  const TEMPOS=[[30,'Larghissimo'],[40,'Grave'],[50,'Largo'],[60,'Larghetto'],[66,'Adagio'],[76,'Andante'],[88,'Andantino'],[100,'Moderato'],[112,'Allegretto'],[120,'Allegro'],[140,'Vivace'],[160,'Presto'],[200,'Prestissimo'],[241,'']];
+  function tname(b){for(let i=0;i<TEMPOS.length-1;i++)if(b>=TEMPOS[i][0]&&b<TEMPOS[i+1][0])return TEMPOS[i][1];return '';}
+
+  function initA(){if(!actxRef.current)actxRef.current=new(window.AudioContext||window.webkitAudioContext)();}
+  function playClick(ac){
+    const ctx=actxRef.current;if(!ctx)return;
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.frequency.value=ac?1400:900;
+    const t=ctx.currentTime;
+    g.gain.setValueAtTime(ac?.7:.35,t);
+    g.gain.exponentialRampToValueAtTime(0.001,t+.055);
+    o.start(t);o.stop(t+.06);
+  }
+
+  function swing(angle,ms){
+    const rod=document.getElementById('met-rod');
+    if(!rod)return;
+    rod.style.transition=`transform ${ms}ms ease-in-out`;
+    rod.style.transform=`rotate(${angle}deg)`;
+  }
+
+  function beat(){
+    const ac=bidxRef.current===0;
+    playClick(ac);
+    const ball=document.getElementById('met-ball');
+    if(ball){ball.style.background=ac?'#E24B4A':'#1DBA88';setTimeout(()=>{if(ball)ball.style.background='#1DBA88';},100);}
+    setBidx(b=>{
+      const nb=(b+1)%compRef.current;
+      bidxRef.current=nb;
+      return b;
+    });
+    const ms=60000/bpmRef.current;
+    swing(sideRef.current*30,ms*0.92);
+    sideRef.current*=-1;
+    bidxRef.current=(bidxRef.current)%compRef.current;
+  }
+
+  function start(){
+    initA();
+    bidxRef.current=0;sideRef.current=1;
+    setBidx(0);
+    const rod=document.getElementById('met-rod');
+    if(rod){rod.style.transition='none';rod.style.transform='rotate(-30deg)';}
+    setTimeout(()=>{
+      beat();
+      tidRef.current=setInterval(beat,60000/bpmRef.current);
+      setRunning(true);
+    },30);
+  }
+
+  function stop(){
+    clearInterval(tidRef.current);tidRef.current=null;
+    const rod=document.getElementById('met-rod');
+    if(rod){rod.style.transition='transform 400ms ease-out';rod.style.transform='rotate(0deg)';}
+    setRunning(false);setBidx(0);bidxRef.current=0;
+  }
+
+  function toggle(){running?stop():start();}
+
+  function updateBpm(v){
+    const nb=Math.max(30,Math.min(240,Math.round(v)));
+    setBpmS(nb);bpmRef.current=nb;
+    if(tidRef.current){clearInterval(tidRef.current);tidRef.current=setInterval(beat,60000/nb);}
+  }
+
+  function setCompasso(n){
+    setComp(n);compRef.current=n;bidxRef.current=0;setBidx(0);
+  }
+
+  function doTap(){
+    const now=Date.now();
+    if(now-(tapTimes[tapTimes.length-1]||0)>2500)tapTimes.length=0;
+    tapTimes.push(now);
+    if(tapTimes.length>6)tapTimes.shift();
+    if(tapTimes.length>=2){
+      const gaps=[];for(let i=1;i<tapTimes.length;i++)gaps.push(tapTimes[i]-tapTimes[i-1]);
+      updateBpm(Math.round(60000/(gaps.reduce((a,b)=>a+b)/gaps.length)));
+    }
+  }
+
+  React.useEffect(()=>()=>{clearInterval(tidRef.current);},[]);
+
+  const dots=Array.from({length:comp},(_,i)=>i);
+
+  return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'1.25rem',padding:'1.5rem 0'}}>
+    <div style={{position:'relative',width:100,height:185}}>
+      <div style={{width:10,height:10,borderRadius:'50%',background:'var(--text2)',position:'absolute',top:0,left:'50%',transform:'translateX(-50%)'}}/>
+      <div id="met-rod" style={{width:3,height:160,background:'var(--border2)',borderRadius:2,position:'absolute',top:5,left:'calc(50% - 1.5px)',transformOrigin:'top center',transform:'rotate(0deg)'}}>
+        <div id="met-ball" style={{width:24,height:24,borderRadius:'50%',background:'#1DBA88',position:'absolute',bottom:-12,left:'50%',transform:'translateX(-50%)',transition:'background .08s'}}/>
+      </div>
+    </div>
+
+    <div>
+      <div style={{display:'flex',alignItems:'center',gap:16}}>
+        <button onClick={()=>updateBpm(bpm-1)} style={{width:38,height:38,borderRadius:'50%',border:'1px solid var(--border2)',background:'transparent',color:'var(--text)',fontSize:22,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'inherit'}}>−</button>
+        <div style={{textAlign:'center'}}>
+          <div style={{fontSize:52,fontWeight:700,color:'var(--text)',letterSpacing:'-.03em',lineHeight:1,minWidth:90,textAlign:'center'}}>{bpm}</div>
+          <div style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.07em',marginTop:3}}>BPM</div>
+        </div>
+        <button onClick={()=>updateBpm(bpm+1)} style={{width:38,height:38,borderRadius:'50%',border:'1px solid var(--border2)',background:'transparent',color:'var(--text)',fontSize:22,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'inherit'}}>+</button>
+      </div>
+      <div style={{fontSize:12,color:'var(--text2)',textAlign:'center',marginTop:4}}>{tname(bpm)}</div>
+    </div>
+
+    <input type="range" min="30" max="240" value={bpm} step="1" style={{width:'100%',maxWidth:300}} onChange={e=>updateBpm(+e.target.value)}/>
+
+    <div style={{display:'flex',gap:6}}>
+      {[2,4,3,6].map(n=><button key={n} onClick={()=>setCompasso(n)} style={{padding:'5px 13px',borderRadius:20,border:`1px solid ${comp===n?'#1DBA88':'var(--border)'}`,background:comp===n?'#1DBA88':'transparent',color:comp===n?'#fff':'var(--text2)',fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>{n===6?'6/8':`${n}/4`}</button>)}
+    </div>
+
+    <div style={{display:'flex',gap:8}}>
+      {dots.map(i=><div key={i} style={{width:30,height:30,borderRadius:'50%',border:`1.5px solid ${i===bidx?(i===0?'#E24B4A':'#1DBA88'):'var(--border2)'}`,background:i===bidx?(i===0?'#E24B4A':'#1DBA88'):'var(--surface2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:i===bidx?'#fff':'var(--text3)'}}>{i+1}</div>)}
+    </div>
+
+    <div style={{display:'flex',gap:10,alignItems:'center'}}>
+      <button onClick={doTap} style={{padding:'6px 16px',borderRadius:20,border:'1px solid var(--border2)',background:'transparent',color:'var(--text2)',fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Tap</button>
+      <button onClick={toggle} style={{width:56,height:56,borderRadius:'50%',border:'none',background:'#1DBA88',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,cursor:'pointer'}}>
+        <i className={`ti ${running?'ti-player-pause':'ti-player-play'}`} aria-hidden="true"/>
+      </button>
+      <button onClick={()=>updateBpm(120)} style={{padding:'6px 16px',borderRadius:20,border:'1px solid var(--border2)',background:'transparent',color:'var(--text2)',fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Reset</button>
+    </div>
+  </div>;
+}
+
+// ── Ferramentas ────────────────────────────────────────────────────────────────
+function Ferramentas({onVoltar}){
+  const [pagina,setPagina]=React.useState('lista');
+  if(pagina==='metronomo') return <div style={{padding:'1.5rem'}}>
+    <button onClick={()=>setPagina('lista')} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:13,color:'var(--text2)',border:'none',background:'none',cursor:'pointer',fontFamily:'inherit',marginBottom:'1rem',padding:0}}>
+      <i className="ti ti-arrow-left" aria-hidden="true"/> Ferramentas
+    </button>
+    <Metronomo/>
+  </div>;
+
+  return <div style={{padding:'1.5rem'}}>
+    <button onClick={onVoltar} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:13,color:'var(--text2)',border:'none',background:'none',cursor:'pointer',fontFamily:'inherit',marginBottom:'1rem',padding:0}}>
+      <i className="ti ti-arrow-left" aria-hidden="true"/> Voltar
+    </button>
+    <div style={{fontSize:18,fontWeight:700,marginBottom:4}}>Ferramentas</div>
+    <div style={{fontSize:12,color:'var(--text2)',marginBottom:'1.25rem'}}>Recursos para seu estudo</div>
+
+    <div onClick={()=>setPagina('metronomo')} style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',padding:'1rem 1.1rem',display:'flex',alignItems:'center',gap:14,cursor:'pointer',marginBottom:8,transition:'border-color .15s'}}>
+      <div style={{width:44,height:44,borderRadius:10,background:'#1DBA8818',border:'1px solid #1DBA8825',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,color:'#1DBA88',flexShrink:0}}>
+        <i className="ti ti-clock" aria-hidden="true"/>
+      </div>
+      <div style={{flex:1}}>
+        <div style={{fontSize:14,fontWeight:700,marginBottom:3}}>Metrônomo</div>
+        <div style={{fontSize:11,color:'var(--text2)'}}>BPM · Compasso · Click · Pêndulo visual</div>
+      </div>
+      <i className="ti ti-chevron-right" style={{fontSize:16,color:'var(--text3)'}} aria-hidden="true"/>
+    </div>
+
+    <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',padding:'1rem 1.1rem',display:'flex',alignItems:'center',gap:14,opacity:.45}}>
+      <div style={{width:44,height:44,borderRadius:10,background:'#7B68EE18',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,color:'#7B68EE',flexShrink:0}}>
+        <i className="ti ti-music" aria-hidden="true"/>
+      </div>
+      <div>
+        <div style={{fontSize:14,fontWeight:700,marginBottom:3}}>Afinador</div>
+        <div style={{fontSize:11,color:'var(--text2)'}}>Em breve</div>
+      </div>
+    </div>
+  </div>;
+}
+
 // ── Área do Aluno (link público) ──────────────────────────────────────────────
-function AlunoPublico(){
+function AlunoPublico({initPage}){
   const {id}=useParams();
   const [aluno,setAluno]=useState(null);
   const [banco,setBanco]=useState([]);
@@ -983,6 +1163,10 @@ function AlunoPublico(){
     setAvisoFechado(true);
   }
 
+  const [paginaAluno,setPaginaAluno]=React.useState(initPage||'perfil');
+
+  if(paginaAluno==='ferramentas') return <Ferramentas onVoltar={()=>setPaginaAluno('perfil')}/>;
+
   return <div>
     {aviso&&!avisoFechado&&<div style={{
       position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',
@@ -1014,7 +1198,14 @@ function AlunoPublico(){
         }}>Entendido ✓</button>
       </div>
     </div>}
-    <PerfilAluno a={aluno} banco={banco} isDemo={true} onVoltar={()=>{}} onUpdate={()=>{}} onEditar={()=>{}} onModalMural={()=>{}} onEnviarVideo={()=>{}} onExcluir={()=>{}} salvarAluno={()=>{}} modal={null} setModal={()=>{}} alunos={[]}/>
+    <div style={{position:'relative'}}>
+      <div style={{position:'absolute',top:14,right:'2rem',zIndex:10}}>
+        <button onClick={()=>setPaginaAluno('ferramentas')} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 14px',borderRadius:20,border:'1px solid #1DBA8840',background:'#1DBA8812',color:'#1DBA88',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'Sora,sans-serif'}}>
+          <i className="ti ti-tools" aria-hidden="true"/> Ferramentas
+        </button>
+      </div>
+      <PerfilAluno a={aluno} banco={banco} isDemo={true} onVoltar={()=>{}} onUpdate={()=>{}} onEditar={()=>{}} onModalMural={()=>{}} onEnviarVideo={()=>{}} onExcluir={()=>{}} salvarAluno={()=>{}} modal={null} setModal={()=>{}} alunos={[]}/>
+    </div>
   </div>;
 }
 
@@ -1031,6 +1222,7 @@ export default function App(){
   return <BrowserRouter>
     <Routes>
       <Route path="/aluno/:id" element={<AlunoPublico/>}/>
+      <Route path="/aluno/:id/ferramentas" element={<AlunoPublico initPage="ferramentas"/>}/>
       <Route path="/*" element={
         user?<Professor/>:<Login onLogin={()=>{}}/>
       }/>
