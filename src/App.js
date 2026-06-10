@@ -737,6 +737,7 @@ function BacklogEstudos({tarefas,isDemo,onToggle,onDelete}){
 function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onExcluir,salvarAluno,modal,setModal,alunos,onFerramentas}){
   const [openV,setOpenV]=useState(null);
   const [openMural,setOpenMural]=useState(null);
+  const [paginaPerfil,setPaginaPerfil]=useState('home');
 
   if(!a)return null;
   const mn=mN();
