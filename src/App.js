@@ -812,42 +812,24 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
       </div>
 
       {isDemo&&paginaPerfil==='home'&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
-        <div onClick={()=>setPaginaPerfil('estudos')} style={{
-          background:'linear-gradient(135deg,#1DBA8822,#1DBA8808)',
-          border:'1px solid #1DBA8840',
-          borderRadius:16,padding:'1.25rem',cursor:'pointer',
-          position:'relative',overflow:'hidden',
-        }}>
+        <div onClick={()=>setPaginaPerfil('estudos')} style={{background:'linear-gradient(135deg,#1DBA8822,#1DBA8808)',border:'1px solid #1DBA8840',borderRadius:16,padding:'1.25rem',cursor:'pointer',position:'relative',overflow:'hidden'}}>
           <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'linear-gradient(90deg,#1DBA88,#4D9EF5)',borderRadius:'16px 16px 0 0'}}/>
-          <div style={{fontSize:28,marginBottom:8}}>📚</div>
+          <div style={{fontSize:26,marginBottom:7}}>📚</div>
           <div style={{fontSize:15,fontWeight:700,color:'var(--text)',marginBottom:4}}>Estudos</div>
-          <div style={{fontSize:11,color:'var(--text2)',marginBottom:10}}>
-            {(a.tf||[]).filter(t=>!t.feita).length} pendente{(a.tf||[]).filter(t=>!t.feita).length!==1?'s':''}
-          </div>
-          <div style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:11,fontWeight:600,color:'#1DBA88'}}>
-            Ver estudos <span>→</span>
-          </div>
+          <div style={{fontSize:11,color:'var(--text2)',marginBottom:10}}>{(a.tf||[]).filter(t=>!t.feita).length} pendente{(a.tf||[]).filter(t=>!t.feita).length!==1?'s':''}</div>
+          <div style={{display:'inline-flex',alignItems:'center',gap:4,fontSize:11,fontWeight:600,color:'#1DBA88'}}>Ver estudos →</div>
         </div>
-        <div onClick={()=>setPaginaPerfil('mensalidade')} style={{
-          background:'linear-gradient(135deg,#4D9EF522,#4D9EF508)',
-          border:'1px solid #4D9EF540',
-          borderRadius:16,padding:'1.25rem',cursor:'pointer',
-          position:'relative',overflow:'hidden',
-        }}>
+        <div onClick={()=>setPaginaPerfil('mensalidade')} style={{background:'linear-gradient(135deg,#4D9EF522,#4D9EF508)',border:'1px solid #4D9EF540',borderRadius:16,padding:'1.25rem',cursor:'pointer',position:'relative',overflow:'hidden'}}>
           <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'linear-gradient(90deg,#4D9EF5,#7B68EE)',borderRadius:'16px 16px 0 0'}}/>
-          <div style={{fontSize:28,marginBottom:8}}>💰</div>
+          <div style={{fontSize:26,marginBottom:7}}>💰</div>
           <div style={{fontSize:15,fontWeight:700,color:'var(--text)',marginBottom:4}}>Mensalidade</div>
-          <div style={{fontSize:11,color:'var(--text2)',marginBottom:10}}>
-            {bn.m.replace('✓ ','').replace('⚠ ','').replace('✕ ','')}
-          </div>
-          <div style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:11,fontWeight:600,color:'#4D9EF5'}}>
-            Ver detalhes <span>→</span>
-          </div>
+          <div style={{fontSize:11,color:'var(--text2)',marginBottom:10}}>{bn.m.replace('✓ ','').replace('⚠ ','').replace('✕ ','')}</div>
+          <div style={{display:'inline-flex',alignItems:'center',gap:4,fontSize:11,fontWeight:600,color:'#4D9EF5'}}>Ver detalhes →</div>
         </div>
       </div>}
 
       {(!isDemo||paginaPerfil==='estudos')&&<div style={{marginBottom:12}}>
-        {isDemo&&paginaPerfil==='estudos'&&<button onClick={()=>setPaginaPerfil('home')} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:'var(--text2)',border:'none',background:'none',cursor:'pointer',fontFamily:'Sora,sans-serif',marginBottom:12,padding:0}}>
+        {isDemo&&<button onClick={()=>setPaginaPerfil('home')} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:'var(--text2)',border:'none',background:'none',cursor:'pointer',fontFamily:'Sora,sans-serif',marginBottom:12,padding:0}}>
           <i className="ti ti-arrow-left" aria-hidden="true"/> Voltar
         </button>}
         <div className="card">
@@ -868,9 +850,10 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
             <textarea className="ta" defaultValue={a.ob} onBlur={e=>onUpdate({ob:e.target.value})}/>
           </div>}
         </div>
+      </div>}
 
       {(!isDemo||paginaPerfil==='mensalidade')&&<div style={{marginBottom:12}}>
-        {isDemo&&paginaPerfil==='mensalidade'&&<button onClick={()=>setPaginaPerfil('home')} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:'var(--text2)',border:'none',background:'none',cursor:'pointer',fontFamily:'Sora,sans-serif',marginBottom:12,padding:0}}>
+        {isDemo&&<button onClick={()=>setPaginaPerfil('home')} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:'var(--text2)',border:'none',background:'none',cursor:'pointer',fontFamily:'Sora,sans-serif',marginBottom:12,padding:0}}>
           <i className="ti ti-arrow-left" aria-hidden="true"/> Voltar
         </button>}
         <div className="card">
@@ -892,7 +875,6 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
               </div>
             </div>;
           })}
-
           <div style={{marginTop:14,paddingTop:12,borderTop:'1px solid var(--border)'}}>
             <div className="label">Chave Pix</div>
             <div style={{background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:8,padding:'10px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
@@ -900,8 +882,8 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
                 <div style={{fontSize:12,fontWeight:700,color:'var(--text)',letterSpacing:'.02em'}}>07341182954</div>
                 <div style={{fontSize:10,color:'var(--text3)',marginTop:3}}>Maurilio Eduardo Pereira</div>
               </div>
-              <button onClick={()=>{navigator.clipboard.writeText('07341182954').then(()=>{const b=document.getElementById('pix-copied');if(b){b.textContent='Copiado!';b.style.color='var(--primary)';setTimeout(()=>{b.textContent='Copiar';b.style.color='var(--text2)';},2000);}});}} style={{background:'var(--surface3)',border:'1px solid var(--border2)',borderRadius:6,padding:'5px 12px',cursor:'pointer',fontFamily:'inherit',fontWeight:600,fontSize:11,color:'var(--text2)',flexShrink:0,display:'flex',alignItems:'center',gap:5,transition:'all .15s'}} id="pix-btn">
-                <i className="ti ti-copy" style={{fontSize:13}} aria-hidden="true"></i>
+              <button onClick={()=>{navigator.clipboard.writeText('07341182954').then(()=>{const b=document.getElementById('pix-copied');if(b){b.textContent='Copiado!';b.style.color='var(--primary)';setTimeout(()=>{b.textContent='Copiar';b.style.color='var(--text2)';},2000);}});}} style={{background:'var(--surface3)',border:'1px solid var(--border2)',borderRadius:6,padding:'5px 12px',cursor:'pointer',fontFamily:'inherit',fontWeight:600,fontSize:11,color:'var(--text2)',flexShrink:0,display:'flex',alignItems:'center',gap:5}} id="pix-btn">
+                <i className="ti ti-copy" style={{fontSize:13}} aria-hidden="true"/>
                 <span id="pix-copied">Copiar</span>
               </button>
             </div>
