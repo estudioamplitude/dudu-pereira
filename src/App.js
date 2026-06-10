@@ -333,7 +333,7 @@ function SplashScreen(){
       @keyframes dp-sub-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
       @keyframes dp-bar{0%{width:0%;}100%{width:100%;}}
     `}</style>
-    <div style={{width:100,height:100,borderRadius:22,overflow:'hidden',marginBottom:24,animation:'dp-logo-in .7s cubic-bezier(.34,1.56,.64,1) both, dp-pulse 2s 1s ease-in-out infinite, dp-glow 2s 1s ease-in-out infinite'}}>
+    <div style={{width:160,height:160,borderRadius:32,overflow:'hidden',marginBottom:28,animation:'dp-logo-in .7s cubic-bezier(.34,1.56,.64,1) both, dp-pulse 2s 1s ease-in-out infinite, dp-glow 2s 1s ease-in-out infinite'}}>
       <img src="https://dudu-pereira.vercel.app/favicon.ico.png" alt="Dudu Pereira" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
     </div>
     <div style={{fontSize:24,fontWeight:700,color:'#E8EBF5',marginBottom:6,animation:'dp-name-in .8s .5s cubic-bezier(.16,1,.3,1) both'}}>Dudu Pereira</div>
