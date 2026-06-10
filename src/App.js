@@ -420,7 +420,7 @@ function Professor(){
   else if(filtro==='inativos')fl=fl.filter(a=>!a.ativo);
   if(filtroDia)fl=fl.filter(a=>(a.diasAula||[]).includes(filtroDia));
 
-  if(loading)return <div className="loading">Carregando…</div>;
+  if(loading)return <SplashScreen/>;
 
   if(alunoAberto){
     const a=alunos.find(x=>x.id===alunoAberto.id)||alunoAberto;
@@ -1474,7 +1474,7 @@ function AlunoPublico({initPage}){
     });
   },[id]);
 
-  if(loading)return <div className="loading" style={{fontFamily:'Sora,sans-serif'}}><style>{G}</style>Carregando…</div>;
+  if(loading)return <SplashScreen/>;
   if(!aluno)return <div className="loading" style={{fontFamily:'Sora,sans-serif'}}><style>{G}</style><div style={{textAlign:'center'}}><div style={{fontSize:32,marginBottom:12}}>♪</div><div>Aluno não encontrado.</div></div></div>;
 
   function fecharAviso(){
@@ -1528,7 +1528,7 @@ export default function App(){
     return onAuthStateChanged(auth,u=>setUser(u));
   },[]);
 
-  if(user===undefined)return <div className="loading" style={{fontFamily:'Sora,sans-serif'}}><style>{G}</style>Carregando…</div>;
+  if(user===undefined)return <SplashScreen/>;
 
   return <BrowserRouter>
     <Routes>
