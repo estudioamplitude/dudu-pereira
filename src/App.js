@@ -734,6 +734,107 @@ function BacklogEstudos({tarefas,isDemo,onToggle,onDelete}){
   </div>;
 }
 
+
+// ── Repertório — visão do professor ──────────────────────────────────────────
+function RepertorioProfessor({a,onUpdate}){
+  const [expandido,setExpandido]=React.useState(true);
+  const [showAdd,setShowAdd]=React.useState(false);
+  const [nome,setNome]=React.useState('');
+  const [artista,setArtista]=React.useState('');
+
+  const HOJE=Date.now(),DIA=86400000;
+  function getStatus(ultimo){
+    const dias=Math.floor((HOJE-(ultimo||0))/DIA);
+    if(dias<14)return{s:'dominada',label:'Dominada',c:'#1DBA88',bg:'#1DBA8820',bc:'#1DBA8830'};
+    if(dias<28)return{s:'revisar',label:'Revisar em breve',c:'#F0A040',bg:'#F0A04020',bc:'#F0A04030'};
+    return{s:'urgente',label:'Precisa revisar',c:'#F05050',bg:'#F0505020',bc:'#F0505030'};
+  }
+  function diasLabel(d){return d===0?'Tocada hoje':d===1?'Há 1 dia':`Há ${d} dias`;}
+
+  function tocarHoje(id){
+    onUpdate({repertorio:(a.repertorio||[]).map(m=>m.id===id?{...m,ultimo:HOJE}:m)});
+  }
+  function remover(id){
+    if(!window.confirm('Remover esta música?'))return;
+    onUpdate({repertorio:(a.repertorio||[]).filter(m=>m.id!==id)});
+  }
+  function adicionar(){
+    if(!nome.trim())return;
+    onUpdate({repertorio:[...(a.repertorio||[]),{id:Date.now().toString(),nome:nome.trim(),artista:artista.trim(),ultimo:HOJE}]});
+    setNome('');setArtista('');setShowAdd(false);
+  }
+
+  const rep=a.repertorio||[];
+  const urgentes=rep.filter(m=>getStatus(m.ultimo).s==='urgente').length;
+  const revisar=rep.filter(m=>getStatus(m.ultimo).s==='revisar').length;
+  const dominadas=rep.filter(m=>getStatus(m.ultimo).s==='dominada').length;
+
+  return <div style={{background:'linear-gradient(135deg,#0F1218,#161B25)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',padding:'1.25rem',marginBottom:10,position:'relative',overflow:'hidden'}}>
+    <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,#F0A040,transparent)',opacity:.5}}/>
+
+    <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:expandido?14:0}}>
+      <div style={{width:32,height:32,borderRadius:8,background:'#F0A04020',border:'1px solid #F0A04040',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16}}>🎵</div>
+      <div style={{flex:1}}>
+        <div style={{fontSize:14,fontWeight:700}}>Repertório</div>
+        <div style={{fontSize:11,color:'var(--text3)',marginTop:1}}>{rep.length} músicas{urgentes>0?` · ${urgentes} urgente${urgentes>1?'s':''} ⚠`:''}</div>
+      </div>
+      <div style={{display:'flex',gap:6}}>
+        <button className="btn btn-sm" style={{borderColor:'#F0A04040',color:'#F0A040'}} onClick={()=>setShowAdd(p=>!p)}>+ Música</button>
+        <button className="btn btn-sm" onClick={()=>setExpandido(p=>!p)}>{expandido?'▲':'▼'}</button>
+      </div>
+    </div>
+
+    {showAdd&&<div style={{background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:12,marginBottom:12}}>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:8}}>
+        <div>
+          <div style={{fontSize:10,color:'var(--text2)',marginBottom:3,fontWeight:600}}>Nome da música *</div>
+          <input className="inp" value={nome} onChange={e=>setNome(e.target.value)} onKeyDown={e=>e.key==='Enter'&&adicionar()} placeholder="Ex: Besame Mucho" style={{fontSize:11}}/>
+        </div>
+        <div>
+          <div style={{fontSize:10,color:'var(--text2)',marginBottom:3,fontWeight:600}}>Artista / Estilo</div>
+          <input className="inp" value={artista} onChange={e=>setArtista(e.target.value)} onKeyDown={e=>e.key==='Enter'&&adicionar()} placeholder="Ex: Bolero" style={{fontSize:11}}/>
+        </div>
+      </div>
+      <div style={{display:'flex',gap:7,justifyContent:'flex-end'}}>
+        <button className="btn btn-sm" onClick={()=>{setShowAdd(false);setNome('');setArtista('');}}>Cancelar</button>
+        <button className="btn btn-primary btn-sm" onClick={adicionar}>✓ Adicionar</button>
+      </div>
+    </div>}
+
+    {expandido&&<div>
+      {rep.length===0&&<div style={{textAlign:'center',padding:'1.5rem',color:'var(--text3)',fontSize:12}}>
+        <div style={{fontSize:24,marginBottom:6}}>🎵</div>Nenhuma música no repertório ainda.
+      </div>}
+      {rep.length>0&&<div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:7,marginBottom:10}}>
+        {[['#1DBA88',dominadas,'Dominadas'],['#F0A040',revisar,'Revisar'],['#F05050',urgentes,'Urgente']].map(([c,n,l])=>
+          <div key={l} style={{background:c+'12',border:`1px solid ${c}25`,borderRadius:8,padding:'8px',textAlign:'center'}}>
+            <div style={{fontSize:18,fontWeight:700,color:c}}>{n}</div>
+            <div style={{fontSize:9,color:'var(--text2)',marginTop:1,textTransform:'uppercase',letterSpacing:'.05em'}}>{l}</div>
+          </div>
+        )}
+      </div>}
+      {rep.map(m=>{
+        const st=getStatus(m.ultimo);
+        const dias=Math.floor((HOJE-(m.ultimo||0))/DIA);
+        return <div key={m.id} style={{background:'var(--surface2)',border:`1px solid var(--border)`,borderLeft:`3px solid ${st.c}`,borderRadius:10,padding:'9px 12px',marginBottom:6,display:'flex',alignItems:'center',gap:10}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:700,color:'var(--text)',marginBottom:2}}>{m.nome}</div>
+            <div style={{display:'flex',alignItems:'center',gap:7,flexWrap:'wrap'}}>
+              {m.artista&&<span style={{fontSize:10,color:'var(--text3)'}}>{m.artista}</span>}
+              <span style={{display:'inline-flex',fontSize:10,padding:'1px 8px',borderRadius:20,fontWeight:700,background:st.bg,color:st.c,border:`1px solid ${st.bc}`}}>{st.label}</span>
+              <span style={{fontSize:10,color:'var(--text3)'}}>{diasLabel(dias)}</span>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:5,flexShrink:0}}>
+            <button className="btn btn-primary btn-xs" onClick={()=>tocarHoje(m.id)}>🎵 Tocou</button>
+            <button className="btn btn-xs btn-danger" onClick={()=>remover(m.id)}>×</button>
+          </div>
+        </div>;
+      })}
+    </div>}
+  </div>;
+}
+
 function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onExcluir,salvarAluno,modal,setModal,alunos,onFerramentas}){
   const [openV,setOpenV]=useState(null);
   const [openMural,setOpenMural]=useState(null);
@@ -942,6 +1043,8 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
           </div>;
         })}
       </div>}
+
+      {!isDemo&&<RepertorioProfessor a={a} onUpdate={onUpdate}/>}
 
       <div className="mural-card">
         <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
