@@ -318,6 +318,32 @@ function PainelAvisos(){
   </div>;
 }
 
+// ── Splash Screen ─────────────────────────────────────────────────────────────
+function SplashScreen(){
+  return <div style={{
+    position:'fixed',inset:0,background:'#080A0F',
+    display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
+    zIndex:9999,fontFamily:'Sora,sans-serif',
+  }}>
+    <style>{`
+      @keyframes dp-logo-in{0%{opacity:0;transform:scale(.7);}60%{transform:scale(1.05);}100%{opacity:1;transform:scale(1);}}
+      @keyframes dp-pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.09);}}
+      @keyframes dp-glow{0%,100%{box-shadow:0 0 30px #1DBA8830;}50%{box-shadow:0 0 55px #1DBA8860;}}
+      @keyframes dp-name-in{0%{opacity:0;letter-spacing:.3em;}100%{opacity:1;letter-spacing:-.02em;}}
+      @keyframes dp-sub-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+      @keyframes dp-bar{0%{width:0%;}100%{width:100%;}}
+    `}</style>
+    <div style={{width:100,height:100,borderRadius:22,overflow:'hidden',marginBottom:24,animation:'dp-logo-in .7s cubic-bezier(.34,1.56,.64,1) both, dp-pulse 2s 1s ease-in-out infinite, dp-glow 2s 1s ease-in-out infinite'}}>
+      <img src="https://dudu-pereira.vercel.app/favicon.ico.png" alt="Dudu Pereira" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+    </div>
+    <div style={{fontSize:24,fontWeight:700,color:'#E8EBF5',marginBottom:6,animation:'dp-name-in .8s .5s cubic-bezier(.16,1,.3,1) both'}}>Dudu Pereira</div>
+    <div style={{fontSize:11,color:'#3E4A68',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:38,animation:'dp-sub-in .6s .9s ease both',opacity:0,animationFillMode:'forwards'}}>Escola de Acordeón</div>
+    <div style={{width:150,height:3,background:'#1E2538',borderRadius:2,overflow:'hidden',animation:'dp-sub-in .4s 1.1s ease both',opacity:0,animationFillMode:'forwards'}}>
+      <div style={{height:'100%',background:'linear-gradient(90deg,#1DBA88,#4D9EF5)',borderRadius:2,animation:'dp-bar 1.6s 1.2s ease forwards',width:0}}/>
+    </div>
+  </div>;
+}
+
 function Professor(){
   const [alunos,setAlunos]=useState([]);
   const [banco,setBanco]=useState([]);
