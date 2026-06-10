@@ -827,6 +827,34 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
           <div style={{fontSize:11,color:'var(--text2)',marginBottom:10}}>{bn.m.replace('✓ ','').replace('⚠ ','').replace('✕ ','')}</div>
           <div style={{display:'inline-flex',alignItems:'center',gap:4,fontSize:11,fontWeight:600,color:'#4D9EF5'}}>Ver detalhes →</div>
         </div>
+        <div onClick={()=>setPaginaAluno('repertorio')} style={{background:'linear-gradient(135deg,#F0A04014,#D4A84312)',border:'1px solid #F0A04040',borderRadius:16,padding:'1.1rem',cursor:'pointer',position:'relative',overflow:'hidden',gridColumn:'1/-1',display:'flex',alignItems:'center',gap:14}}>
+          <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'linear-gradient(90deg,#F0A040,#D4A843)',borderRadius:'16px 16px 0 0'}}/>
+          <div style={{fontSize:28,flexShrink:0}}>🎵</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:3}}>Meu Repertório</div>
+            <div style={{fontSize:11,color:'var(--text2)',marginBottom:6}}>
+              {(()=>{const rep=a.repertorio||[];const HOJE=Date.now(),DIA=86400000;
+                const urg=rep.filter(m=>Math.floor((HOJE-(m.ultimo||0))/DIA)>=28).length;
+                const rev=rep.filter(m=>{const d=Math.floor((HOJE-(m.ultimo||0))/DIA);return d>=14&&d<28;}).length;
+                const dom=rep.filter(m=>Math.floor((HOJE-(m.ultimo||0))/DIA)<14).length;
+                return rep.length===0?'Nenhuma música ainda':`${rep.length} músicas · ${urg>0?urg+' urgente':'em dia'}`;
+              })()}
+            </div>
+            <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+              {(()=>{const rep=a.repertorio||[];const HOJE=Date.now(),DIA=86400000;
+                const urg=rep.filter(m=>Math.floor((HOJE-(m.ultimo||0))/DIA)>=28).length;
+                const rev=rep.filter(m=>{const d=Math.floor((HOJE-(m.ultimo||0))/DIA);return d>=14&&d<28;}).length;
+                const dom=rep.filter(m=>Math.floor((HOJE-(m.ultimo||0))/DIA)<14).length;
+                return <>
+                  {dom>0&&<span style={{fontSize:10,padding:'2px 8px',borderRadius:20,background:'#1DBA8820',color:'#1DBA88',border:'1px solid #1DBA8830',fontWeight:700}}>{dom} dominada{dom!==1?'s':''}</span>}
+                  {rev>0&&<span style={{fontSize:10,padding:'2px 8px',borderRadius:20,background:'#F0A04020',color:'#F0A040',border:'1px solid #F0A04030',fontWeight:700}}>{rev} revisar</span>}
+                  {urg>0&&<span style={{fontSize:10,padding:'2px 8px',borderRadius:20,background:'#F0505020',color:'#F05050',border:'1px solid #F0505030',fontWeight:700}}>{urg} urgente{urg!==1?'s':''}</span>}
+                </>;
+              })()}
+            </div>
+          </div>
+          <div style={{fontSize:11,fontWeight:600,color:'#F0A040',flexShrink:0}}>Ver →</div>
+        </div>
       </div>}
 
       {(!isDemo||paginaPerfil==='estudos')&&<div style={{marginBottom:12}}>
@@ -1181,6 +1209,137 @@ function Ferramentas({onVoltar}){
   </div>;
 }
 
+
+// ── Repertório ────────────────────────────────────────────────────────────────
+function Repertorio({a,isDemo,onUpdate,onVoltar}){
+  const [showModal,setShowModal]=useState(false);
+  const [nome,setNome]=useState('');
+  const [artista,setArtista]=useState('');
+
+  const HOJE=Date.now();
+  const DIA=86400000;
+
+  function getStatus(ultimo){
+    const dias=Math.floor((HOJE-(ultimo||0))/DIA);
+    if(dias<14) return {s:'dominada',label:'Dominada',c:'#1DBA88',bg:'#1DBA8820',bc:'#1DBA8830',cls:'green',dias};
+    if(dias<28) return {s:'revisar',label:'Revisar em breve',c:'#F0A040',bg:'#F0A04020',bc:'#F0A04030',cls:'amber',dias};
+    return {s:'urgente',label:'Precisa revisar',c:'#F05050',bg:'#F0505020',bc:'#F0505030',cls:'red',dias};
+  }
+
+  function diasLabel(dias){
+    if(dias===0) return 'Tocada hoje';
+    if(dias===1) return 'Há 1 dia';
+    return `Há ${dias} dias`;
+  }
+
+  function tocarHoje(id){
+    const rep=(a.repertorio||[]).map(m=>m.id===id?{...m,ultimo:HOJE}:m);
+    onUpdate({repertorio:rep});
+  }
+
+  function adicionar(){
+    if(!nome.trim()) return;
+    const rep=[...(a.repertorio||[]),{id:Date.now().toString(),nome:nome.trim(),artista:artista.trim(),ultimo:HOJE}];
+    onUpdate({repertorio:rep});
+    setNome('');setArtista('');setShowModal(false);
+  }
+
+  function remover(id){
+    if(!window.confirm('Remover esta música do repertório?')) return;
+    onUpdate({repertorio:(a.repertorio||[]).filter(m=>m.id!==id)});
+  }
+
+  const rep=a.repertorio||[];
+  const urgentes=rep.filter(m=>getStatus(m.ultimo).s==='urgente');
+  const revisar=rep.filter(m=>getStatus(m.ultimo).s==='revisar');
+  const dominadas=rep.filter(m=>getStatus(m.ultimo).s==='dominada');
+
+  const sb={border:'1px solid #28304A',background:'transparent',color:'#E8EBF5',cursor:'pointer',fontFamily:'Sora,sans-serif'};
+
+  const MusicCard=({m})=>{
+    const st=getStatus(m.ultimo);
+    return <div style={{background:SURF,border:`1px solid ${BORDER}`,borderLeft:`3px solid ${st.c}`,borderRadius:12,padding:'1rem 1.1rem',marginBottom:8}}>
+      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:10}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:13,fontWeight:700,color:CTEXT,marginBottom:3}}>{m.nome}</div>
+          <div style={{fontSize:11,color:TEXT2,marginBottom:7}}>{m.artista||'—'}</div>
+          <div style={{display:'flex',alignItems:'center',gap:7,flexWrap:'wrap'}}>
+            <span style={{display:'inline-flex',fontSize:10,padding:'2px 9px',borderRadius:20,fontWeight:700,background:st.bg,color:st.c,border:`1px solid ${st.bc}`}}>{st.label}</span>
+            <span style={{fontSize:10,color:TEXT3}}>{diasLabel(st.dias)}</span>
+          </div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:5,flexShrink:0}}>
+          <button onClick={()=>tocarHoje(m.id)} style={{...sb,padding:'5px 10px',fontSize:10,background:PRIMARY,border:'none',color:'#fff',borderRadius:7}}>🎵 Toquei hoje</button>
+          {!isDemo&&<button onClick={()=>remover(m.id)} style={{...sb,padding:'3px 8px',fontSize:10,color:CRED,borderColor:'#F0505030'}}>× Remover</button>}
+        </div>
+      </div>
+    </div>;
+  };
+
+  return <div style={{fontFamily:'Sora,sans-serif',background:BG,minHeight:'100vh'}}>
+    <div style={{background:SURF,borderBottom:`1px solid ${BORDER}`,padding:'0 1.5rem',height:56,display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <img src="https://dudu-pereira.vercel.app/favicon.ico.png" alt="" style={{width:30,height:30,borderRadius:8}}/>
+        <span style={{fontSize:15,fontWeight:700,color:CTEXT,fontFamily:'Sora,sans-serif'}}>Meu Repertório</span>
+      </div>
+      <div style={{display:'flex',gap:8}}>
+        <button onClick={()=>setShowModal(true)} style={{...sb,padding:'5px 13px',fontSize:12,borderRadius:20,background:PRIMARY,border:'none',color:'#fff'}}>+ Adicionar</button>
+        <button onClick={onVoltar} style={{...sb,padding:'5px 13px',fontSize:12,borderRadius:20}}>← Voltar</button>
+      </div>
+    </div>
+
+    <div style={{maxWidth:600,margin:'0 auto',padding:'1.5rem'}}>
+      {urgentes.length>0&&<div style={{background:'#F0505015',border:'1px solid #F0505030',borderRadius:10,padding:'10px 14px',marginBottom:14,display:'flex',alignItems:'center',gap:10}}>
+        <span style={{fontSize:20,flexShrink:0}}>🔴</span>
+        <div>
+          <div style={{fontSize:12,fontWeight:700,color:CRED}}>{urgentes.length} música{urgentes.length>1?'s':''} precisando de revisão urgente</div>
+          <div style={{fontSize:11,color:TEXT2,marginTop:2}}>Faz mais de 28 dias sem tocar</div>
+        </div>
+      </div>}
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:16}}>
+        {[['#1DBA88',dominadas.length,'Dominadas'],['#F0A040',revisar.length,'Revisar'],['#F05050',urgentes.length,'Urgente']].map(([c,n,l])=>
+          <div key={l} style={{background:c+'12',border:`1px solid ${c}25`,borderRadius:10,padding:'10px',textAlign:'center'}}>
+            <div style={{fontSize:22,fontWeight:700,color:c}}>{n}</div>
+            <div style={{fontSize:10,color:TEXT2,marginTop:2}}>{l}</div>
+          </div>
+        )}
+      </div>
+
+      {[[urgentes,'🔴 Precisa revisar agora'],[revisar,'🟡 Revisar em breve'],[dominadas,'🟢 Dominadas']].map(([list,label])=>
+        list.length>0&&<div key={label}>
+          <div style={{fontSize:10,fontWeight:700,color:TEXT3,textTransform:'uppercase',letterSpacing:'.1em',marginBottom:8,marginTop:14}}>{label}</div>
+          {list.map(m=><MusicCard key={m.id} m={m}/>)}
+        </div>
+      )}
+
+      {rep.length===0&&<div style={{textAlign:'center',padding:'3rem',color:TEXT3,fontSize:13}}>
+        <div style={{fontSize:32,marginBottom:10}}>🎵</div>
+        <div>Nenhuma música no repertório ainda.</div>
+        <div style={{fontSize:11,marginTop:6,color:TEXT3}}>Toque em "+ Adicionar" para começar</div>
+      </div>}
+    </div>
+
+    {showModal&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.75)',backdropFilter:'blur(8px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem'}} onClick={e=>{if(e.target===e.currentTarget)setShowModal(false);}}>
+      <div style={{background:SURF,border:`1px solid ${BORDER2}`,borderRadius:20,padding:'1.5rem',width:340,maxWidth:'100%'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+          <span style={{fontSize:15,fontWeight:700,color:CTEXT}}>Nova música</span>
+          <button onClick={()=>setShowModal(false)} style={{background:'none',border:'none',color:TEXT2,cursor:'pointer',fontSize:20,lineHeight:1}}>×</button>
+        </div>
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,color:TEXT2,marginBottom:4,fontWeight:600}}>Nome da música *</div>
+          <input value={nome} onChange={e=>setNome(e.target.value)} onKeyDown={e=>e.key==='Enter'&&adicionar()} placeholder="Ex: Besame Mucho" style={{border:`1px solid ${BORDER}`,borderRadius:7,padding:'8px 10px',fontSize:13,background:SURF2,color:CTEXT,width:'100%',fontFamily:'Sora,sans-serif'}}/>
+        </div>
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:11,color:TEXT2,marginBottom:4,fontWeight:600}}>Artista / Estilo</div>
+          <input value={artista} onChange={e=>setArtista(e.target.value)} onKeyDown={e=>e.key==='Enter'&&adicionar()} placeholder="Ex: Trio Los Panchos · Bolero" style={{border:`1px solid ${BORDER}`,borderRadius:7,padding:'8px 10px',fontSize:13,background:SURF2,color:CTEXT,width:'100%',fontFamily:'Sora,sans-serif'}}/>
+        </div>
+        <button onClick={adicionar} style={{width:'100%',padding:'10px',borderRadius:10,background:PRIMARY,border:'none',color:'#fff',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:'Sora,sans-serif'}}>✓ Adicionar ao repertório</button>
+      </div>
+    </div>}
+  </div>;
+}
+
 // ── Área do Aluno (link público) ──────────────────────────────────────────────
 function AlunoPublico({initPage}){
   const {id}=useParams();
@@ -1190,6 +1349,7 @@ function AlunoPublico({initPage}){
   const [aviso,setAviso]=useState(null);
   const [avisoFechado,setAvisoFechado]=useState(false);
   const [paginaAluno,setPaginaAluno]=useState(initPage||'perfil');
+  const [alunoRepertorios,setAlunoRepertorios]=useState(null);
 
   useEffect(()=>{
     getDoc(doc(db,'alunos',id)).then(d=>{
@@ -1220,6 +1380,7 @@ function AlunoPublico({initPage}){
   }
 
   if(paginaAluno==='ferramentas') return <Ferramentas onVoltar={()=>setPaginaAluno('perfil')}/>;
+  if(paginaAluno==='repertorio'&&aluno) return <Repertorio a={aluno} isDemo={true} onUpdate={async(dados)=>{await updateDoc(doc(db,'alunos',aluno.id),dados);setAluno(a=>({...a,...dados}));}} onVoltar={()=>setPaginaAluno('perfil')}/>;
 
   return <div>
     {aviso&&!avisoFechado&&<div style={{
