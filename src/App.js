@@ -835,7 +835,7 @@ function RepertorioProfessor({a,onUpdate}){
   </div>;
 }
 
-function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onExcluir,salvarAluno,modal,setModal,alunos,onFerramentas}){
+function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onExcluir,salvarAluno,modal,setModal,alunos,onFerramentas,onRepertorio}){
   const [openV,setOpenV]=useState(null);
   const [openMural,setOpenMural]=useState(null);
   const [paginaPerfil,setPaginaPerfil]=useState('home');
@@ -928,7 +928,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
           <div style={{fontSize:11,color:'var(--text2)',marginBottom:10}}>{bn.m.replace('✓ ','').replace('⚠ ','').replace('✕ ','')}</div>
           <div style={{display:'inline-flex',alignItems:'center',gap:4,fontSize:11,fontWeight:600,color:'#4D9EF5'}}>Ver detalhes →</div>
         </div>
-        <div onClick={()=>setPaginaAluno('repertorio')} style={{background:'linear-gradient(135deg,#F0A04014,#D4A84312)',border:'1px solid #F0A04040',borderRadius:16,padding:'1.1rem',cursor:'pointer',position:'relative',overflow:'hidden',gridColumn:'1/-1',display:'flex',alignItems:'center',gap:14}}>
+        <div onClick={()=>onRepertorio&&onRepertorio()} style={{background:'linear-gradient(135deg,#F0A04014,#D4A84312)',border:'1px solid #F0A04040',borderRadius:16,padding:'1.1rem',cursor:'pointer',position:'relative',overflow:'hidden',gridColumn:'1/-1',display:'flex',alignItems:'center',gap:14}}>
           <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'linear-gradient(90deg,#F0A040,#D4A843)',borderRadius:'16px 16px 0 0'}}/>
           <div style={{fontSize:28,flexShrink:0}}>🎵</div>
           <div style={{flex:1}}>
@@ -1516,7 +1516,7 @@ function AlunoPublico({initPage}){
         }}>Entendido ✓</button>
       </div>
     </div>}
-    <PerfilAluno a={aluno} banco={banco} isDemo={true} onVoltar={()=>{}} onUpdate={()=>{}} onEditar={()=>{}} onModalMural={()=>{}} onEnviarVideo={()=>{}} onExcluir={()=>{}} salvarAluno={()=>{}} modal={null} setModal={()=>{}} alunos={[]} onFerramentas={()=>setPaginaAluno('ferramentas')}/>
+    <PerfilAluno a={aluno} banco={banco} isDemo={true} onVoltar={()=>{}} onUpdate={()=>{}} onEditar={()=>{}} onModalMural={()=>{}} onEnviarVideo={()=>{}} onExcluir={()=>{}} salvarAluno={()=>{}} modal={null} setModal={()=>{}} alunos={[]} onFerramentas={()=>setPaginaAluno('ferramentas')} onRepertorio={()=>setPaginaAluno('repertorio')}/>
   </div>;
 }
 
