@@ -811,8 +811,45 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
         </div>}
       </div>
 
-      <div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:12}}>
+      {isDemo&&paginaPerfil==='home'&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
+        <div onClick={()=>setPaginaPerfil('estudos')} style={{
+          background:'linear-gradient(135deg,#1DBA8822,#1DBA8808)',
+          border:'1px solid #1DBA8840',
+          borderRadius:16,padding:'1.25rem',cursor:'pointer',
+          position:'relative',overflow:'hidden',
+        }}>
+          <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'linear-gradient(90deg,#1DBA88,#4D9EF5)',borderRadius:'16px 16px 0 0'}}/>
+          <div style={{fontSize:28,marginBottom:8}}>📚</div>
+          <div style={{fontSize:15,fontWeight:700,color:'var(--text)',marginBottom:4}}>Estudos</div>
+          <div style={{fontSize:11,color:'var(--text2)',marginBottom:10}}>
+            {(a.tf||[]).filter(t=>!t.feita).length} pendente{(a.tf||[]).filter(t=>!t.feita).length!==1?'s':''}
+          </div>
+          <div style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:11,fontWeight:600,color:'#1DBA88'}}>
+            Ver estudos <span>→</span>
+          </div>
+        </div>
+        <div onClick={()=>setPaginaPerfil('mensalidade')} style={{
+          background:'linear-gradient(135deg,#4D9EF522,#4D9EF508)',
+          border:'1px solid #4D9EF540',
+          borderRadius:16,padding:'1.25rem',cursor:'pointer',
+          position:'relative',overflow:'hidden',
+        }}>
+          <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'linear-gradient(90deg,#4D9EF5,#7B68EE)',borderRadius:'16px 16px 0 0'}}/>
+          <div style={{fontSize:28,marginBottom:8}}>💰</div>
+          <div style={{fontSize:15,fontWeight:700,color:'var(--text)',marginBottom:4}}>Mensalidade</div>
+          <div style={{fontSize:11,color:'var(--text2)',marginBottom:10}}>
+            {bn.m.replace('✓ ','').replace('⚠ ','').replace('✕ ','')}
+          </div>
+          <div style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:11,fontWeight:600,color:'#4D9EF5'}}>
+            Ver detalhes <span>→</span>
+          </div>
+        </div>
+      </div>}
 
+      {(!isDemo||paginaPerfil==='estudos')&&<div style={{marginBottom:12}}>
+        {isDemo&&paginaPerfil==='estudos'&&<button onClick={()=>setPaginaPerfil('home')} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:'var(--text2)',border:'none',background:'none',cursor:'pointer',fontFamily:'Sora,sans-serif',marginBottom:12,padding:0}}>
+          <i className="ti ti-arrow-left" aria-hidden="true"/> Voltar
+        </button>}
         <div className="card">
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
             <div className="label" style={{margin:0}}>Estudos da semana</div>
@@ -831,6 +868,11 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
             <textarea className="ta" defaultValue={a.ob} onBlur={e=>onUpdate({ob:e.target.value})}/>
           </div>}
         </div>
+
+      {(!isDemo||paginaPerfil==='mensalidade')&&<div style={{marginBottom:12}}>
+        {isDemo&&paginaPerfil==='mensalidade'&&<button onClick={()=>setPaginaPerfil('home')} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:'var(--text2)',border:'none',background:'none',cursor:'pointer',fontFamily:'Sora,sans-serif',marginBottom:12,padding:0}}>
+          <i className="ti ti-arrow-left" aria-hidden="true"/> Voltar
+        </button>}
         <div className="card">
           <div className="label">Mensalidade</div>
           <div className="banner" style={{background:bn.bg,color:bn.c,border:`1px solid ${bn.bc}`}}>{bn.m}</div>
@@ -865,7 +907,7 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
             </div>
           </div>
         </div>
-      </div>
+      </div>}
 
       {(a.ve||[]).length>0&&<div style={{marginBottom:12}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
