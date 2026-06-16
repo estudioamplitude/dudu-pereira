@@ -865,10 +865,12 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
   const [openV,setOpenV]=useState(null);
   const [openMural,setOpenMural]=useState(null);
   const [paginaPerfil,setPaginaPerfil]=useState('home');
+  const [localPags,setLocalPags]=useState(null);
+  React.useEffect(()=>{setLocalPags(null);},[a.id]);
 
   if(!a)return null;
   const mn=mN();
-  const pags=a.pags||[];
+  const pags=localPags||a.pags||[];
   const pagsComMes=pags.find(p=>p.mes===mn)?pags:[{mes:mn,status:'pendente'},...pags];
 
   const dist=cT(a.tf||[],a.td||30);
@@ -877,8 +879,8 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
     :st0==='pendente'?{bg:'#F0A04015',c:'#F0A040',bc:'#F0A04030',m:`⚠ Vence dia ${a.dia} — ainda no prazo.`}
     :{bg:'#F0505015',c:'#F05050',bc:'#F0505030',m:`✕ Venceu dia ${a.dia} — em atraso.`};
 
-  async function mP(i){const p=[...pagsComMes];p[i]={...p[i],status:'pago'};onUpdate({pags:p});}
-  async function dP(i){const p=[...pagsComMes];p[i]={...p[i],status:'pendente'};onUpdate({pags:p});}
+  async function mP(i){const p=[...pagsComMes];p[i]={...p[i],status:'pago'};setLocalPags(p);onUpdate({pags:p});}
+  async function dP(i){const p=[...pagsComMes];p[i]={...p[i],status:'pendente'};setLocalPags(p);onUpdate({pags:p});}
   async function togT(id){onUpdate({tf:(a.tf||[]).map(t=>t.id===id?{...t,feita:!t.feita}:t)});}
   async function sP2(id,pr){onUpdate({tf:(a.tf||[]).map(t=>t.id===id?{...t,pr}:t)});}
   async function addT(tx,pr){onUpdate({tf:[...(a.tf||[]),{id:Date.now().toString(),tx,feita:false,pr}]});}
