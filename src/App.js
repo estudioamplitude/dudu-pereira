@@ -242,6 +242,158 @@ function Login({onLogin}){
 
 // ── PAINEL DO PROFESSOR ───────────────────────────────────────────────────────
 
+
+// ── Painel de Finanças ────────────────────────────────────────────────────────
+function PainelFinancas({alunos,onAbrirAluno}){
+  const MS2=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const hoje=new Date();
+  const mesAtual=MS[hoje.getMonth()]+'/'+hoje.getFullYear();
+  const proximoMesD=new Date(hoje.getFullYear(),hoje.getMonth()+1,1);
+  const proximoMes=MS[proximoMesD.getMonth()]+'/'+proximoMesD.getFullYear();
+
+  const ativos=alunos.filter(a=>a.ativo);
+
+  // Calcula status de cada aluno no mês atual
+  function getStatusAluno(a){
+    const p=a.pags?.find(x=>x.mes===mesAtual);
+    if(!p) return 'pendente';
+    return sP(p,a.dia);
+  }
+
+  const pagos=ativos.filter(a=>getStatusAluno(a)==='pago');
+  const pendentes=ativos.filter(a=>getStatusAluno(a)==='pendente');
+  const atrasados=ativos.filter(a=>getStatusAluno(a)==='atrasado');
+
+  // Alunos com qualquer mês atrasado nos últimos 3
+  const comAtrasado=ativos.filter(a=>{
+    const pags=a.pags||[];
+    return pags.slice(0,3).some(p=>sP(p,a.dia)==='atrasado');
+  });
+
+  const totalPrevisto=ativos.reduce((s,a)=>s+(a.val||0),0);
+  const totalRecebido=pagos.reduce((s,a)=>s+(a.val||0),0);
+  const totalAberto=pendentes.reduce((s,a)=>s+(a.val||0),0);
+  const totalAtrasado=atrasados.reduce((s,a)=>s+(a.val||0),0);
+  const pct=ativos.length?Math.round((pagos.length/ativos.length)*100):0;
+
+  // Valor atrasado total (todos os meses)
+  const valorAtrasadoTotal=comAtrasado.reduce((s,a)=>{
+    const qtd=(a.pags||[]).slice(0,3).filter(p=>sP(p,a.dia)==='atrasado').length;
+    return s+(a.val||0)*qtd;
+  },0);
+
+  const fmtR=(v)=>'R$ '+v.toLocaleString('pt-BR');
+
+  // SVG donut
+  const circ=2*Math.PI*15.9;
+  const dash=pct/100*circ;
+
+  return <div>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.2rem'}}>
+      <div>
+        <div style={{fontSize:20,fontWeight:700,letterSpacing:'-.02em'}}>💰 Finanças</div>
+        <div style={{fontSize:12,color:'var(--text3)',marginTop:2}}>{MS2[hoje.getMonth()]} {hoje.getFullYear()}</div>
+      </div>
+    </div>
+
+    {/* 4 cards resumo */}
+    <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:14}}>
+      {[
+        {label:'Previsto',val:fmtR(totalPrevisto),sub:`${ativos.length} alunos ativos`,c:'#1DBA88'},
+        {label:'Recebido',val:fmtR(totalRecebido),sub:`${pagos.length} pagamentos`,c:'#4D9EF5'},
+        {label:'Em aberto',val:fmtR(totalAberto),sub:`${pendentes.length} pendentes`,c:'#F0A040'},
+        {label:'Atrasados',val:fmtR(totalAtrasado),sub:`${atrasados.length} alunos`,c:'#F05050'},
+      ].map(({label,val,sub,c})=><div key={label} className="card" style={{borderTop:`2px solid ${c}`}}>
+        <div className="label">{label}</div>
+        <div style={{fontSize:20,fontWeight:700,color:c,marginBottom:4}}>{val}</div>
+        <div style={{fontSize:10,color:'var(--text3)'}}>{sub}</div>
+      </div>)}
+    </div>
+
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
+
+      {/* Previsão próximo mês */}
+      <div className="card">
+        <div className="label">Previsão — próximo mês</div>
+        <div style={{display:'flex',alignItems:'center',gap:14,marginTop:6}}>
+          <div style={{width:52,height:52,borderRadius:12,background:'#1DBA8818',border:'1px solid #1DBA8830',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,flexShrink:0}}>📅</div>
+          <div>
+            <div style={{fontSize:12,color:'var(--text2)',marginBottom:4}}>{proximoMes}</div>
+            <div style={{fontSize:26,fontWeight:700,color:'#1DBA88',letterSpacing:'-.02em'}}>{fmtR(totalPrevisto)}</div>
+            <div style={{fontSize:11,color:'var(--text3)',marginTop:3}}>Baseado nos {ativos.length} alunos ativos atuais</div>
+          </div>
+        </div>
+        <div style={{marginTop:14,padding:'10px 12px',background:'var(--surface2)',borderRadius:9,border:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <span style={{fontSize:11,color:'var(--text2)'}}>Valor médio por aluno</span>
+          <span style={{fontSize:13,fontWeight:700,color:'var(--text)'}}>{ativos.length?fmtR(Math.round(totalPrevisto/ativos.length)):'R$ 0'}</span>
+        </div>
+      </div>
+
+      {/* Adimplência */}
+      <div className="card">
+        <div className="label">Taxa de adimplência — {MS[hoje.getMonth()]}/{hoje.getFullYear()}</div>
+        <div style={{display:'flex',alignItems:'center',gap:16,marginTop:6}}>
+          <div style={{position:'relative',width:90,height:90,flexShrink:0}}>
+            <svg viewBox="0 0 36 36" style={{width:90,height:90,transform:'rotate(-90deg)'}}>
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--border)" strokeWidth="3"/>
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#1DBA88" strokeWidth="3"
+                strokeDasharray={`${dash} ${circ-dash}`} strokeLinecap="round"/>
+            </svg>
+            <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+              <span style={{fontSize:18,fontWeight:700,color:'#1DBA88'}}>{pct}%</span>
+            </div>
+          </div>
+          <div style={{flex:1}}>
+            {[['#1DBA88',pagos.length,'Em dia'],['#F0A040',pendentes.length,'Pendentes'],['#F05050',atrasados.length,'Atrasados']].map(([c,n,l])=>
+              <div key={l} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'5px 0',borderBottom:'1px solid var(--border)'}}>
+                <div style={{display:'flex',alignItems:'center',gap:6}}>
+                  <div style={{width:8,height:8,borderRadius:'50%',background:c}}/>
+                  <span style={{fontSize:11,color:'var(--text2)'}}>{l}</span>
+                </div>
+                <span style={{fontSize:13,fontWeight:700,color:c}}>{n}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Alunos atrasados */}
+    {comAtrasado.length>0&&<div className="card" style={{marginBottom:12}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+        <div className="label" style={{margin:0}}>⚠ Alunos com pagamento atrasado</div>
+        <span style={{display:'inline-flex',fontSize:10,padding:'2px 9px',borderRadius:20,fontWeight:700,background:'#F0505020',color:'#F05050',border:'1px solid #F0505030'}}>{comAtrasado.length} aluno{comAtrasado.length!==1?'s':''}</span>
+      </div>
+      {comAtrasado.map(a=>{
+        const mesesAtr=(a.pags||[]).slice(0,3).filter(p=>sP(p,a.dia)==='atrasado');
+        const valorAtr=(a.val||0)*mesesAtr.length;
+        return <div key={a.id} onClick={()=>onAbrirAluno(a)} style={{background:'var(--surface2)',border:'1px solid var(--border)',borderLeft:'3px solid #F05050',borderRadius:10,padding:'10px 14px',display:'flex',alignItems:'center',gap:10,marginBottom:6,cursor:'pointer',transition:'border-color .15s'}}>
+          <div className="av" style={{width:34,height:34,background:a.ac+'22',border:`2px solid ${a.ac}50`,color:a.ac,fontSize:11,fontWeight:700}}>{a.in}</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:700,color:'var(--text)',marginBottom:2}}>{a.nm}</div>
+            <div style={{fontSize:11,color:'var(--text2)'}}>{mesesAtr.map(p=>p.mes).join(', ')} em atraso</div>
+          </div>
+          <div style={{textAlign:'right',flexShrink:0}}>
+            <div style={{fontSize:13,fontWeight:700,color:'#F05050'}}>{fmtR(valorAtr)}</div>
+            <div style={{fontSize:10,color:'var(--text3)',marginTop:2}}>{mesesAtr.length} {mesesAtr.length===1?'mês':'meses'}</div>
+          </div>
+          <span style={{color:'var(--text3)',fontSize:16}}>›</span>
+        </div>;
+      })}
+      <div style={{marginTop:10,padding:'10px 12px',background:'#F0505010',border:'1px solid #F0505025',borderRadius:9,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <span style={{fontSize:11,color:'var(--text2)'}}>Total em atraso</span>
+        <span style={{fontSize:14,fontWeight:700,color:'#F05050'}}>{fmtR(valorAtrasadoTotal)}</span>
+      </div>
+    </div>}
+
+    {comAtrasado.length===0&&<div style={{textAlign:'center',padding:'2rem',color:'var(--text3)',fontSize:13}}>
+      <div style={{fontSize:32,marginBottom:10}}>🎉</div>
+      <div style={{fontWeight:700,color:'#1DBA88',marginBottom:4}}>Nenhum aluno em atraso!</div>
+      <div>Todos os pagamentos estão em dia.</div>
+    </div>}
+  </div>;
+}
+
 // ── Painel de Avisos ──────────────────────────────────────────────────────────
 function PainelAvisos(){
   const [texto,setTexto]=React.useState('');
@@ -472,6 +624,7 @@ function Professor(){
       <nav className="nav">
         <button className={`nav-btn ${aba==='alunos'?'on':''}`} onClick={()=>setAba('alunos')}>👥 Alunos</button>
         <button className={`nav-btn ${aba==='banco'?'on':''}`} onClick={()=>setAba('banco')}>▶ Vídeos</button>
+        <button className={`nav-btn ${aba==='financas'?'on':''}`} onClick={()=>setAba('financas')}>💰 Finanças</button>
         <button className={`nav-btn ${aba==='avisos'?'on':''}`} onClick={()=>setAba('avisos')}>📢 Avisos</button>
         <button className="nav-btn" onClick={()=>signOut(auth)}>Sair</button>
       </nav>
@@ -546,6 +699,7 @@ function Professor(){
       </div>}
 
       {aba==='banco'&&<BancoVideos banco={banco} alunos={alunos} modal={modal} setModal={setModal} salvarVideo={salvarVideo} excluirVideo={excluirVideo} atualizarAluno={atualizarAluno}/>}
+      {aba==='financas'&&<PainelFinancas alunos={alunos} onAbrirAluno={a=>{setAlunoAberto(a);}}/>}
       {aba==='avisos'&&<PainelAvisos/>}
     </div>
   </div>;
