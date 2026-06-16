@@ -874,10 +874,15 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
   const pagsComMes=pags.find(p=>p.mes===mn)?pags:[{mes:mn,status:'pendente'},...pags];
 
   const dist=cT(a.tf||[],a.td||30);
-  const st0=pagsComMes[0]?sP(pagsComMes[0],a.dia):'pendente';
-  const bn=st0==='pago'?{bg:'#1DBA8815',c:'#1DBA88',bc:'#1DBA8830',m:'✓ Mensalidade paga — tudo em dia!'}
+  // Verifica os 3 meses — se qualquer um estiver atrasado, alerta
+  const statuses=pagsComMes.slice(0,3).map(p=>sP(p,a.dia));
+  const temAtrasado=statuses.some(s=>s==='atrasado');
+  const temPendente=statuses.some(s=>s==='pendente');
+  const st0=temAtrasado?'atrasado':temPendente?'pendente':'pago';
+  const mesesAtrasados=pagsComMes.slice(0,3).filter(p=>sP(p,a.dia)==='atrasado').map(p=>p.mes);
+  const bn=st0==='pago'?{bg:'#1DBA8815',c:'#1DBA88',bc:'#1DBA8830',m:'✓ Mensalidade em dia — todos os meses pagos!'}
     :st0==='pendente'?{bg:'#F0A04015',c:'#F0A040',bc:'#F0A04030',m:`⚠ Vence dia ${a.dia} — ainda no prazo.`}
-    :{bg:'#F0505015',c:'#F05050',bc:'#F0505030',m:`✕ Venceu dia ${a.dia} — em atraso.`};
+    :{bg:'#F0505015',c:'#F05050',bc:'#F0505030',m:`✕ Pagamento atrasado: ${mesesAtrasados.join(', ')}. Vencimento dia ${a.dia}.`};
 
   async function mP(i){const p=[...pagsComMes];p[i]={...p[i],status:'pago'};setLocalPags(p);onUpdate({pags:p});}
   async function dP(i){const p=[...pagsComMes];p[i]={...p[i],status:'pendente'};setLocalPags(p);onUpdate({pags:p});}
