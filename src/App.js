@@ -653,11 +653,6 @@ function Professor(){
           </div>
         </div>}
 
-        <div className="g4" style={{marginBottom:'1.4rem'}}>
-          {[['Total ativos',ativos,'var(--text)'],['Em dia',p2,'var(--primary)'],['Pendentes',pe,'var(--amber)'],['Atrasados',at,'var(--red)']].map(([l,v,c])=>
-            <div key={l} className="metric"><div className="metric-label">{l}</div><div className="metric-val" style={{color:c}}>{v}</div></div>
-          )}
-        </div>
 
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12,gap:10,flexWrap:'wrap'}}>
           <div style={{display:'flex',alignItems:'center',gap:10}}>
