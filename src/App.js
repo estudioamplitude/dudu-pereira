@@ -141,7 +141,7 @@ function cT(tf,td){
 }
 function yTh(id){return 'https://img.youtube.com/vi/'+id+'/mqdefault.jpg';}
 function yEm(id){return 'https://www.youtube.com/embed/'+id+'?rel=0&autoplay=1';}
-function yId(url){const m=url.match(/(?:v=|youtu\.be\/)([^&\s]+)/);return m?m[1]:null;}
+function yId(url){const m=url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([^&\s?]+)/);return m?m[1]:null;}
 function pgr(a){return Math.round(((a.t?.R?.p||0)+(a.t?.T?.p||0)+(a.t?.K?.p||0))/3);}
 
 // ── Avatar + Badge ───────────────────────────────────────────────────────────
