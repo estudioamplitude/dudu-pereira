@@ -489,7 +489,6 @@ function BancoPlayalongs({playalongs,alunos,modal,setModal,salvarPlayalong,exclu
           </div>
         </div>
         <div style={{display:'flex',gap:6,marginTop:10,justifyContent:'flex-end'}}>
-          <button className="btn btn-primary btn-xs" onClick={()=>setModal({tipo:'enviarPlayalong',playalong:p})}>📤 Enviar</button>
           <button className="btn btn-xs" onClick={()=>setModal({tipo:'playalong',playalong:p})}>✎ Editar</button>
           <button className="btn btn-xs btn-danger" onClick={()=>excluirPlayalong(p.id)}>🗑 Excluir</button>
         </div>
@@ -802,9 +801,10 @@ function Professor(){
       onEditar={()=>setModal({tipo:'aluno',aluno:a})}
       onModalMural={()=>setModal({tipo:'mural',aluno:a})}
       onEnviarVideo={()=>setModal({tipo:'enviarVideo',aluno:a})}
+      onEnviarPlayalong={()=>setModal({tipo:'enviarPlayalongAluno',aluno:a})}
       onExcluir={()=>excluirAluno(a.id)}
       salvarAluno={salvarAluno}
-      modal={modal} setModal={setModal} banco={banco} alunos={alunos}
+      modal={modal} setModal={setModal} banco={banco} alunos={alunos} playalongsAll={playalongs}
     />;
   }
 
@@ -897,7 +897,7 @@ function Professor(){
 }
 
 // ── Modal despachante ─────────────────────────────────────────────────────────
-function ModalDespachante({modal,setModal,alunos,banco,salvarAluno,salvarVideo,atualizarAluno}){
+function ModalDespachante({modal,setModal,alunos,banco,salvarAluno,salvarVideo,atualizarAluno,playalongsAll}){
   if(!modal)return null;
   if(modal.tipo==='aluno')return <ModalAluno aluno={modal.aluno?alunos.find(a=>a.id===modal.aluno.id)||modal.aluno:null} onSalvar={salvarAluno} onClose={()=>setModal(null)}/>;
   if(modal.tipo==='mural')return <ModalMural aluno={modal.aluno} onSalvar={async(dados)=>{
@@ -916,6 +916,11 @@ function ModalDespachante({modal,setModal,alunos,banco,salvarAluno,salvarVideo,a
     await atualizarAluno(aId,{ve:tem?(a.ve||[]).filter(x=>x!==modal.video.id):[...(a.ve||[]),modal.video.id]});
   }} onClose={()=>setModal(null)}/>;
   if(modal.tipo==='video')return <ModalVideo video={modal.video} onSalvar={salvarVideo} onClose={()=>setModal(null)}/>;
+  if(modal.tipo==='enviarPlayalongAluno')return <ModalEnviarPlayalongAluno aluno={modal.aluno} playalongs={playalongsAll} onToggle={async(pId)=>{
+    const a=alunos.find(x=>x.id===modal.aluno.id);
+    const tem=(a.pa||[]).includes(pId);
+    await atualizarAluno(a.id,{pa:tem?(a.pa||[]).filter(x=>x!==pId):[...(a.pa||[]),pId]});
+  }} onClose={()=>setModal(null)}/>;
   return null;
 }
 
@@ -1013,6 +1018,23 @@ function ModalEnviarVideo({aluno,banco,onToggle,onClose}){
       <div style={{width:15,height:15,borderRadius:4,border:'1px solid var(--border2)',background:t?'var(--primary)':'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:9,color:'#fff'}}>{t?'✓':''}</div>
       <img src={yTh(v.yt)} style={{width:46,height:28,objectFit:'cover',borderRadius:5}} alt=""/>
       <div><div style={{fontSize:12,fontWeight:700,marginBottom:2}}>{v.tt}</div><Bd l={v.tr}/></div>
+    </div>;})}
+    <button className="btn btn-primary" style={{width:'100%',marginTop:14,justifyContent:'center'}} onClick={onClose}>✓ Confirmar</button>
+  </Modal>;
+}
+
+// ── Modal Enviar Playalong (dentro do perfil do aluno) ───────────────────────
+function ModalEnviarPlayalongAluno({aluno,playalongs,onToggle,onClose}){
+  const [pa,setPa]=useState(aluno.pa||[]);
+  return <Modal title={`Enviar Playalong para ${aluno.nm.split(' ')[0]}`} onClose={onClose}>
+    <p style={{fontSize:12,color:'var(--text2)',marginBottom:10}}>Selecione playalongs cadastrados</p>
+    {(playalongs||[]).length===0&&<div style={{fontSize:12,color:'var(--text3)',padding:'1rem 0',textAlign:'center'}}>Nenhum playalong cadastrado ainda. Vá em "🎧 Playalongs" para adicionar.</div>}
+    {(playalongs||[]).map(p=>{const t=pa.includes(p.id);return <div key={p.id} className="crow" onClick={()=>{onToggle(p.id);setPa(prev=>t?prev.filter(x=>x!==p.id):[...prev,p.id]);}}>
+      <div style={{width:15,height:15,borderRadius:4,border:'1px solid var(--border2)',background:t?'var(--primary)':'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:9,color:'#fff'}}>{t?'✓':''}</div>
+      <div style={{width:36,height:36,borderRadius:8,background:'#4D9EF518',border:'1px solid #4D9EF530',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+        <i className="ti ti-headphones" style={{fontSize:16,color:'#4D9EF5'}} aria-hidden="true"/>
+      </div>
+      <div><div style={{fontSize:12,fontWeight:700,marginBottom:2}}>{p.tt}</div>{p.ob&&<div style={{fontSize:10,color:'var(--text3)'}}>{p.ob}</div>}</div>
     </div>;})}
     <button className="btn btn-primary" style={{width:'100%',marginTop:14,justifyContent:'center'}} onClick={onClose}>✓ Confirmar</button>
   </Modal>;
@@ -1206,7 +1228,7 @@ function RepertorioProfessor({a,onUpdate}){
   </div>;
 }
 
-function PerfilAluno({a,banco,playalongs,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onExcluir,salvarAluno,modal,setModal,alunos,onFerramentas,onRepertorio}){
+function PerfilAluno({a,banco,playalongs,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onEnviarPlayalong,onExcluir,salvarAluno,modal,setModal,alunos,onFerramentas,onRepertorio}){
   const [openV,setOpenV]=useState(null);
   const [openMural,setOpenMural]=useState(null);
   const [paginaPerfil,setPaginaPerfil]=useState('home');
@@ -1264,7 +1286,7 @@ function PerfilAluno({a,banco,playalongs,isDemo,onVoltar,onUpdate,onEditar,onMod
       </button>}
     </div>
 
-    {modal&&!isDemo&&<ModalDespachante modal={modal} setModal={setModal} alunos={alunos||[]} banco={banco} salvarAluno={salvarAluno||((dados,id)=>{})} salvarVideo={()=>{}} atualizarAluno={async(id,d)=>onUpdate(d)}/>}
+    {modal&&!isDemo&&<ModalDespachante modal={modal} setModal={setModal} alunos={alunos||[]} banco={banco} salvarAluno={salvarAluno||((dados,id)=>{})} salvarVideo={()=>{}} atualizarAluno={async(id,d)=>onUpdate(d)} playalongsAll={playalongs}/>}
 
     <div className="main">
       {!isDemo&&<button className="back-btn" onClick={onVoltar}>← Voltar para lista</button>}
@@ -1284,6 +1306,7 @@ function PerfilAluno({a,banco,playalongs,isDemo,onVoltar,onUpdate,onEditar,onMod
             navigator.clipboard.writeText(url).then(()=>alert(`✓ Link copiado!\n\n${url}`));
           }}>🔗 Copiar link do aluno</button>
           <button className="btn btn-sm" onClick={onEnviarVideo}>▶ Enviar vídeo</button>
+          {!isDemo&&<button className="btn btn-sm" style={{borderColor:'#4D9EF540',color:'#4D9EF5'}} onClick={onEnviarPlayalong}>🎧 Enviar Playalong</button>}
           <button className="btn btn-sm" style={{borderColor:'#D4A84340',color:'#D4A843'}} onClick={onModalMural}>🎬 Mural</button>
           <button className="btn btn-sm" onClick={onEditar}>✎ Editar</button>
           <button className={`btn btn-xs ${a.ativo?'btn-danger':''}`} onClick={()=>onUpdate({ativo:!a.ativo})}>{a.ativo?'Desativar':'Ativar'}</button>
