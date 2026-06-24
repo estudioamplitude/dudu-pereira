@@ -142,6 +142,8 @@ function cT(tf,td){
 function yTh(id){return 'https://img.youtube.com/vi/'+id+'/mqdefault.jpg';}
 function yEm(id){return 'https://www.youtube.com/embed/'+id+'?rel=0&autoplay=1';}
 function yId(url){const m=url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([^&\s?]+)/);return m?m[1]:null;}
+function driveId(url){const m=url.match(/\/d\/([^\/]+)/)||url.match(/id=([^&\s]+)/);return m?m[1]:null;}
+function driveStreamUrl(url){const id=driveId(url);return id?`https://drive.google.com/uc?export=download&id=${id}`:null;}
 function pgr(a){return Math.round(((a.t?.R?.p||0)+(a.t?.T?.p||0)+(a.t?.K?.p||0))/3);}
 
 // ── Avatar + Badge ───────────────────────────────────────────────────────────
@@ -394,6 +396,178 @@ function PainelFinancas({alunos,onAbrirAluno}){
   </div>;
 }
 
+
+// ── Player de Áudio customizado (sem controles nativos / sem download fácil) ──
+function PlayerAudio({src,accentColor}){
+  const audioRef=React.useRef(null);
+  const [playing,setPlaying]=React.useState(false);
+  const [cur,setCur]=React.useState(0);
+  const [dur,setDur]=React.useState(0);
+
+  function fmt(s){
+    if(!s||isNaN(s))return '0:00';
+    const m=Math.floor(s/60),sec=Math.floor(s%60);
+    return `${m}:${sec.toString().padStart(2,'0')}`;
+  }
+
+  function toggle(){
+    const el=audioRef.current; if(!el)return;
+    if(playing){el.pause();}else{el.play().catch(()=>{});}
+  }
+
+  function seek(e){
+    const el=audioRef.current; if(!el||!dur)return;
+    const rect=e.currentTarget.getBoundingClientRect();
+    const pct=(e.clientX-rect.left)/rect.width;
+    el.currentTime=pct*dur;
+  }
+
+  const pct=dur?(cur/dur)*100:0;
+  const c=accentColor||'#1DBA88';
+
+  return <div style={{background:'#161B25',border:'1px solid #1E2538',borderRadius:10,padding:'10px 14px',marginTop:10,display:'flex',alignItems:'center',gap:10}}
+    onContextMenu={e=>e.preventDefault()}>
+    <audio
+      ref={audioRef}
+      src={src}
+      preload="metadata"
+      onTimeUpdate={e=>setCur(e.target.currentTime)}
+      onLoadedMetadata={e=>setDur(e.target.duration)}
+      onPlay={()=>setPlaying(true)}
+      onPause={()=>setPlaying(false)}
+      onEnded={()=>setPlaying(false)}
+      controlsList="nodownload noremoteplaybook"
+      onContextMenu={e=>e.preventDefault()}
+      style={{display:'none'}}
+    />
+    <button onClick={toggle} style={{width:34,height:34,borderRadius:'50%',background:c,border:'none',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
+      <i className={`ti ${playing?'ti-player-pause-filled':'ti-player-play-filled'}`} aria-hidden="true"/>
+    </button>
+    <div onClick={seek} style={{flex:1,height:4,background:'#28304A',borderRadius:2,position:'relative',cursor:'pointer'}}>
+      <div style={{position:'absolute',left:0,top:0,height:'100%',background:c,borderRadius:2,width:`${pct}%`}}/>
+    </div>
+    <span style={{fontSize:10,color:'#7A85A8',flexShrink:0,minWidth:70,textAlign:'right'}}>{fmt(cur)} / {fmt(dur)}</span>
+  </div>;
+}
+
+// ── Banco de Playalongs (visão do professor) ──────────────────────────────────
+function BancoPlayalongs({playalongs,alunos,modal,setModal,salvarPlayalong,excluirPlayalong,atualizarAluno}){
+  const [busca,setBusca]=useState('');
+  const fl=playalongs.filter(p=>p.tt?.toLowerCase().includes(busca.toLowerCase()));
+
+  return <div>
+    {modal&&modal.tipo==='playalong'&&<ModalPlayalong playalong={modal.playalong} onSalvar={salvarPlayalong} onClose={()=>setModal(null)}/>}
+    {modal&&modal.tipo==='enviarPlayalong'&&<ModalEnviarPlayalong playalong={modal.playalong} alunos={alunos} atualizarAluno={atualizarAluno} onClose={()=>setModal(null)}/>}
+
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.2rem'}}>
+      <div>
+        <div style={{fontSize:20,fontWeight:700,letterSpacing:'-.02em'}}>🎧 Playalongs</div>
+        <div style={{fontSize:12,color:'var(--text2)',marginTop:3}}>Áudios do Google Drive para os alunos tocarem junto</div>
+      </div>
+      <button className="btn btn-primary btn-sm" onClick={()=>setModal({tipo:'playalong',playalong:null})}>+ Adicionar</button>
+    </div>
+
+    <input className="inp" style={{width:'100%',marginBottom:'1.2rem'}} placeholder="Buscar playalong..." value={busca} onChange={e=>setBusca(e.target.value)}/>
+
+    {fl.map(p=>{
+      const at=alunos.filter(a=>a.pa?.includes(p.id));
+      const streamUrl=driveStreamUrl(p.url);
+      return <div key={p.id} style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',padding:'1rem 1.1rem',marginBottom:10}}>
+        <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
+          <div style={{width:44,height:44,borderRadius:10,background:'#4D9EF518',border:'1px solid #4D9EF530',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            <i className="ti ti-headphones" style={{fontSize:20,color:'#4D9EF5'}} aria-hidden="true"/>
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+              <div style={{fontSize:14,fontWeight:700,color:'var(--text)'}}>{p.tt}</div>
+              <span style={{display:'inline-flex',fontSize:9,padding:'2px 8px',borderRadius:20,fontWeight:700,background:'#4D9EF520',color:'#4D9EF5',border:'1px solid #4D9EF530',flexShrink:0}}>Drive</span>
+            </div>
+            {p.ob&&<div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>{p.ob}</div>}
+            {at.length>0&&<div style={{fontSize:10,color:'var(--text3)',marginTop:3}}>Enviado para: {at.map(a=>a.nm.split(' ')[0]).join(', ')}</div>}
+            {streamUrl&&<PlayerAudio src={streamUrl} accentColor="#4D9EF5"/>}
+            {!streamUrl&&<div style={{fontSize:11,color:'#F05050',marginTop:8}}>⚠ Link do Drive inválido — verifique se está no formato correto.</div>}
+          </div>
+        </div>
+        <div style={{display:'flex',gap:6,marginTop:10,justifyContent:'flex-end'}}>
+          <button className="btn btn-primary btn-xs" onClick={()=>setModal({tipo:'enviarPlayalong',playalong:p})}>📤 Enviar</button>
+          <button className="btn btn-xs" onClick={()=>setModal({tipo:'playalong',playalong:p})}>✎ Editar</button>
+          <button className="btn btn-xs btn-danger" onClick={()=>excluirPlayalong(p.id)}>🗑 Excluir</button>
+        </div>
+      </div>;
+    })}
+    {fl.length===0&&<div className="empty">Nenhum playalong cadastrado ainda.</div>}
+  </div>;
+}
+
+// ── Modal: Cadastrar/Editar Playalong ─────────────────────────────────────────
+function ModalPlayalong({playalong,onSalvar,onClose}){
+  const [tt,setTt]=useState(playalong?.tt||'');
+  const [url,setUrl]=useState(playalong?.url||'');
+  const [ob,setOb]=useState(playalong?.ob||'');
+  const valido=driveId(url)!==null;
+
+  function salvar(){
+    if(!tt.trim()){alert('Digite o nome da música.');return;}
+    if(!url.trim()||!valido){alert('Cole um link válido do Google Drive.');return;}
+    onSalvar({tt:tt.trim(),url:url.trim(),ob:ob.trim()},playalong?.id);
+  }
+
+  return <Modal title={playalong?'Editar Playalong':'Novo Playalong'} onClose={onClose}>
+    <div className="fsec">
+      <div className="label">Nome da música *</div>
+      <input className="inp" value={tt} onChange={e=>setTt(e.target.value)} placeholder="Ex: Asa Branca"/>
+    </div>
+    <div className="fsec">
+      <div className="label">Link do Google Drive *</div>
+      <input className="inp" value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://drive.google.com/file/d/.../view"/>
+      <div style={{fontSize:11,color:'var(--text3)',marginTop:5}}>
+        No Drive: botão direito no arquivo → Compartilhar → "Qualquer pessoa com o link" → Copiar link
+      </div>
+      {url&&!valido&&<div style={{fontSize:11,color:'#F05050',marginTop:5}}>⚠ Não consegui identificar o arquivo nesse link.</div>}
+      {url&&valido&&<div style={{fontSize:11,color:'#1DBA88',marginTop:5}}>✓ Link reconhecido</div>}
+    </div>
+    <div className="fsec">
+      <div className="label">Estilo / Observação</div>
+      <input className="inp" value={ob} onChange={e=>setOb(e.target.value)} placeholder="Ex: Baião · sem acordeón"/>
+    </div>
+    <div style={{display:'flex',gap:9,justifyContent:'flex-end'}}>
+      <button className="btn btn-sm" onClick={onClose}>Cancelar</button>
+      <button className="btn btn-primary btn-sm" onClick={salvar}>✓ {playalong?'Salvar alterações':'Adicionar Playalong'}</button>
+    </div>
+  </Modal>;
+}
+
+// ── Modal: Enviar Playalong para alunos ───────────────────────────────────────
+function ModalEnviarPlayalong({playalong,alunos,atualizarAluno,onClose}){
+  const [sel,setSel]=useState(alunos.filter(a=>a.pa?.includes(playalong.id)).map(a=>a.id));
+  const ativos=alunos.filter(a=>a.ativo);
+
+  function toggle(id){setSel(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);}
+
+  async function salvar(){
+    for(const a of alunos){
+      const tem=(a.pa||[]).includes(playalong.id);
+      const deve=sel.includes(a.id);
+      if(tem&&!deve) await atualizarAluno(a.id,{pa:(a.pa||[]).filter(x=>x!==playalong.id)});
+      if(!tem&&deve) await atualizarAluno(a.id,{pa:[...(a.pa||[]),playalong.id]});
+    }
+    onClose();
+  }
+
+  return <Modal title={`Enviar "${playalong.tt}" para...`} onClose={onClose}>
+    <div style={{maxHeight:320,overflowY:'auto',marginBottom:14}}>
+      {ativos.map(a=><div key={a.id} onClick={()=>toggle(a.id)} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 10px',borderRadius:8,cursor:'pointer',background:sel.includes(a.id)?'var(--primary-dim)':'transparent'}}>
+        <div className={`ck ${sel.includes(a.id)?'ok':''}`}>{sel.includes(a.id)?'✓':''}</div>
+        <span style={{fontSize:13,color:'var(--text)'}}>{a.nm}</span>
+      </div>)}
+    </div>
+    <div style={{display:'flex',gap:9,justifyContent:'flex-end'}}>
+      <button className="btn btn-sm" onClick={onClose}>Cancelar</button>
+      <button className="btn btn-primary btn-sm" onClick={salvar}>✓ Salvar envio</button>
+    </div>
+  </Modal>;
+}
+
 // ── Painel de Avisos ──────────────────────────────────────────────────────────
 function PainelAvisos(){
   const [texto,setTexto]=React.useState('');
@@ -499,6 +673,7 @@ function SplashScreen(){
 function Professor(){
   const [alunos,setAlunos]=useState([]);
   const [banco,setBanco]=useState([]);
+  const [playalongs,setPlayalongs]=useState([]);
   const [aba,setAba]=useState('alunos');
   const [alunoAberto,setAlunoAberto]=useState(null);
   const [loading,setLoading]=useState(true);
@@ -515,7 +690,10 @@ function Professor(){
     const unsubB=onSnapshot(collection(db,'banco'),snap=>{
       setBanco(snap.docs.map(d=>({id:d.id,...d.data()})));
     });
-    return ()=>{unsub();unsubB();};
+    const unsubP=onSnapshot(collection(db,'playalongs'),snap=>{
+      setPlayalongs(snap.docs.map(d=>({id:d.id,...d.data()})));
+    });
+    return ()=>{unsub();unsubB();unsubP();};
   },[]);
 
   async function salvarAluno(dados,editId){
@@ -561,6 +739,22 @@ function Professor(){
     setModal(null);
   }
 
+  async function salvarPlayalong(dados,editId){
+    const id=editId||Date.now().toString();
+    await setDoc(doc(db,'playalongs',id),dados);
+    setModal(null);
+  }
+
+  async function excluirPlayalong(id){
+    if(!window.confirm('Remover este playalong?'))return;
+    await deleteDoc(doc(db,'playalongs',id));
+    for(const a of alunos){
+      if(a.pa?.includes(id)){
+        await updateDoc(doc(db,'alunos',a.id),{pa:(a.pa||[]).filter(x=>x!==id)});
+      }
+    }
+  }
+
   async function excluirAluno(id){
     if(!window.confirm('Excluir este aluno permanentemente? Esta ação não pode ser desfeita.'))return;
     await deleteDoc(doc(db,'alunos',id));
@@ -602,7 +796,7 @@ function Professor(){
 
   if(alunoAberto){
     const a=alunos.find(x=>x.id===alunoAberto.id)||alunoAberto;
-    return <PerfilAluno a={a} banco={banco} isDemo={false}
+    return <PerfilAluno a={a} banco={banco} playalongs={playalongs} isDemo={false}
       onVoltar={()=>setAlunoAberto(null)}
       onUpdate={dados=>atualizarAluno(a.id,dados)}
       onEditar={()=>setModal({tipo:'aluno',aluno:a})}
@@ -624,6 +818,7 @@ function Professor(){
       <nav className="nav">
         <button className={`nav-btn ${aba==='alunos'?'on':''}`} onClick={()=>setAba('alunos')}>👥 Alunos</button>
         <button className={`nav-btn ${aba==='banco'?'on':''}`} onClick={()=>setAba('banco')}>▶ Vídeos</button>
+        <button className={`nav-btn ${aba==='playalongs'?'on':''}`} onClick={()=>setAba('playalongs')}>🎧 Playalongs</button>
         <button className={`nav-btn ${aba==='financas'?'on':''}`} onClick={()=>setAba('financas')}>💰 Finanças</button>
         <button className={`nav-btn ${aba==='avisos'?'on':''}`} onClick={()=>setAba('avisos')}>📢 Avisos</button>
         <button className="nav-btn" onClick={()=>signOut(auth)}>Sair</button>
@@ -694,6 +889,7 @@ function Professor(){
       </div>}
 
       {aba==='banco'&&<BancoVideos banco={banco} alunos={alunos} modal={modal} setModal={setModal} salvarVideo={salvarVideo} excluirVideo={excluirVideo} atualizarAluno={atualizarAluno}/>}
+      {aba==='playalongs'&&<BancoPlayalongs playalongs={playalongs} alunos={alunos} modal={modal} setModal={setModal} salvarPlayalong={salvarPlayalong} excluirPlayalong={excluirPlayalong} atualizarAluno={atualizarAluno}/>}
       {aba==='financas'&&<PainelFinancas alunos={alunos} onAbrirAluno={a=>{setAlunoAberto(a);}}/>}
       {aba==='avisos'&&<PainelAvisos/>}
     </div>
@@ -1010,7 +1206,7 @@ function RepertorioProfessor({a,onUpdate}){
   </div>;
 }
 
-function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onExcluir,salvarAluno,modal,setModal,alunos,onFerramentas,onRepertorio}){
+function PerfilAluno({a,banco,playalongs,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onExcluir,salvarAluno,modal,setModal,alunos,onFerramentas,onRepertorio}){
   const [openV,setOpenV]=useState(null);
   const [openMural,setOpenMural]=useState(null);
   const [paginaPerfil,setPaginaPerfil]=useState('home');
@@ -1221,6 +1417,26 @@ function PerfilAluno({a,banco,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onE
             <div className="vact">
               {!est?<button className="btn btn-primary btn-xs" onClick={()=>mEst(vid)}>✓ Marcar estudado</button>:<span style={{fontSize:11,color:'var(--primary)',fontWeight:600}}>✓ Concluído</span>}
               {!isDemo&&<button className="btn btn-xs" style={{marginLeft:'auto'}} onClick={()=>rV(vid)}>× Remover</button>}
+            </div>
+          </div>;
+        })}
+      </div>}
+
+      {(a.pa||[]).length>0&&<div style={{marginBottom:12}}>
+        <div className="label" style={{margin:0,marginBottom:10}}>🎧 Playalongs</div>
+        {(a.pa||[]).map(pid=>{
+          const p=(playalongs||[]).find(x=>x.id===pid);if(!p)return null;
+          const streamUrl=driveStreamUrl(p.url);
+          return <div key={pid} style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',padding:'1rem 1.1rem',marginBottom:8}}>
+            <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
+              <div style={{width:40,height:40,borderRadius:10,background:'#4D9EF518',border:'1px solid #4D9EF530',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <i className="ti ti-headphones" style={{fontSize:18,color:'#4D9EF5'}} aria-hidden="true"/>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:700,color:'var(--text)'}}>{p.tt}</div>
+                {p.ob&&<div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>{p.ob}</div>}
+                {streamUrl&&<PlayerAudio src={streamUrl} accentColor="#4D9EF5"/>}
+              </div>
             </div>
           </div>;
         })}
@@ -1630,6 +1846,7 @@ function AlunoPublico({initPage}){
   const {id}=useParams();
   const [aluno,setAluno]=useState(null);
   const [banco,setBanco]=useState([]);
+  const [playalongs,setPlayalongs]=useState([]);
   const [loading,setLoading]=useState(true);
   const [aviso,setAviso]=useState(null);
   const [avisoFechado,setAvisoFechado]=useState(false);
@@ -1643,6 +1860,9 @@ function AlunoPublico({initPage}){
     });
     getDocs(collection(db,'banco')).then(snap=>{
       setBanco(snap.docs.map(d=>({id:d.id,...d.data()})));
+    });
+    getDocs(collection(db,'playalongs')).then(snap=>{
+      setPlayalongs(snap.docs.map(d=>({id:d.id,...d.data()})));
     });
     // Busca aviso mais recente
     getDocs(collection(db,'avisos')).then(snap=>{
@@ -1698,7 +1918,7 @@ function AlunoPublico({initPage}){
         }}>Entendido ✓</button>
       </div>
     </div>}
-    <PerfilAluno a={aluno} banco={banco} isDemo={true} onVoltar={()=>{}} onUpdate={()=>{}} onEditar={()=>{}} onModalMural={()=>{}} onEnviarVideo={()=>{}} onExcluir={()=>{}} salvarAluno={()=>{}} modal={null} setModal={()=>{}} alunos={[]} onFerramentas={()=>setPaginaAluno('ferramentas')} onRepertorio={()=>setPaginaAluno('repertorio')}/>
+    <PerfilAluno a={aluno} banco={banco} playalongs={playalongs} isDemo={true} onVoltar={()=>{}} onUpdate={()=>{}} onEditar={()=>{}} onModalMural={()=>{}} onEnviarVideo={()=>{}} onExcluir={()=>{}} salvarAluno={()=>{}} modal={null} setModal={()=>{}} alunos={[]} onFerramentas={()=>setPaginaAluno('ferramentas')} onRepertorio={()=>setPaginaAluno('repertorio')}/>
   </div>;
 }
 
