@@ -1189,7 +1189,7 @@ function RepertorioProfessor({a,onUpdate}){
   </div>;
 }
 
-function PerfilAluno({a,banco,playalongs,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onEnviarPlayalong,onExcluir,salvarAluno,modal,setModal,alunos,onFerramentas,onRepertorio}){
+function PerfilAluno({a,banco,playalongs,isDemo,onVoltar,onUpdate,onEditar,onModalMural,onEnviarVideo,onEnviarPlayalong,onExcluir,salvarAluno,modal,setModal,alunos,onFerramentas,onRepertorio,onPlayalongs}){
   const [openV,setOpenV]=useState(null);
   const [openMural,setOpenMural]=useState(null);
   const [paginaPerfil,setPaginaPerfil]=useState('home');
@@ -1406,24 +1406,16 @@ function PerfilAluno({a,banco,playalongs,isDemo,onVoltar,onUpdate,onEditar,onMod
         })}
       </div>}
 
-      {(a.pa||[]).length>0&&<div style={{marginBottom:12}}>
-        <div className="label" style={{margin:0,marginBottom:10}}>🎧 Playalongs</div>
-        {(a.pa||[]).map(pid=>{
-          const p=(playalongs||[]).find(x=>x.id===pid);if(!p)return null;
-          const streamUrl=driveStreamUrl(p.url);
-          return <div key={pid} style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',padding:'1rem 1.1rem',marginBottom:8}}>
-            <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
-              <div style={{width:40,height:40,borderRadius:10,background:'#4D9EF518',border:'1px solid #4D9EF530',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <i className="ti ti-headphones" style={{fontSize:18,color:'#4D9EF5'}} aria-hidden="true"/>
-              </div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:700,color:'var(--text)'}}>{p.tt}</div>
-                {p.ob&&<div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>{p.ob}</div>}
-                {streamUrl&&<PlayerAudio src={streamUrl} accentColor="#4D9EF5"/>}
-              </div>
-            </div>
-          </div>;
-        })}
+      {isDemo&&(a.pa||[]).length>0&&<div onClick={()=>onPlayalongs&&onPlayalongs()} style={{background:'linear-gradient(135deg,#4D9EF522,#7B68EE12)',border:'1px solid #4D9EF540',borderRadius:16,padding:'1.1rem',cursor:'pointer',position:'relative',overflow:'hidden',marginBottom:12,display:'flex',alignItems:'center',gap:14}}>
+        <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'linear-gradient(90deg,#4D9EF5,#7B68EE)',borderRadius:'16px 16px 0 0'}}/>
+        <div style={{width:48,height:48,borderRadius:12,background:'#4D9EF522',border:'1px solid #4D9EF540',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          <i className="ti ti-headphones" style={{fontSize:24,color:'#4D9EF5'}} aria-hidden="true"/>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:3}}>Playalongs</div>
+          <div style={{fontSize:11,color:'var(--text2)'}}>{(a.pa||[]).length} áudio{(a.pa||[]).length!==1?'s':''} para tocar junto</div>
+        </div>
+        <div style={{fontSize:11,fontWeight:600,color:'#4D9EF5',flexShrink:0}}>Ver →</div>
       </div>}
 
       {!isDemo&&<RepertorioProfessor a={a} onUpdate={onUpdate}/>}
@@ -1825,6 +1817,49 @@ function Repertorio({a,isDemo,onUpdate,onVoltar}){
   </div>;
 }
 
+
+// ── Página de Playalongs do Aluno ─────────────────────────────────────────────
+function PlayalongsAluno({a,playalongs,onVoltar}){
+  const meusPa=(a.pa||[]).map(pid=>(playalongs||[]).find(x=>x.id===pid)).filter(Boolean);
+
+  return <div style={{fontFamily:'Sora,sans-serif',background:BG,minHeight:'100vh'}}>
+    <div style={{background:SURF,borderBottom:`1px solid ${BORDER}`,padding:'0 1.5rem',height:56,display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:50}}>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <img src="https://dudu-pereira.vercel.app/favicon.ico.png" alt="" style={{width:30,height:30,borderRadius:8}}/>
+        <span style={{fontSize:15,fontWeight:700,color:CTEXT,fontFamily:'Sora,sans-serif'}}>Playalongs</span>
+      </div>
+      <button onClick={onVoltar} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:TEXT2,border:`1px solid ${BORDER2}`,background:'transparent',cursor:'pointer',fontFamily:'Sora,sans-serif',padding:'5px 12px',borderRadius:20}}>
+        <i className="ti ti-arrow-left" aria-hidden="true"/> Voltar
+      </button>
+    </div>
+
+    <div style={{maxWidth:600,margin:'0 auto',padding:'1.5rem'}}>
+      <div style={{fontSize:12,color:TEXT2,marginBottom:16}}>Áudios para você tocar junto</div>
+
+      {meusPa.length===0&&<div style={{textAlign:'center',padding:'3rem',color:TEXT3,fontSize:13}}>
+        <i className="ti ti-headphones" style={{fontSize:36,marginBottom:10,display:'block'}} aria-hidden="true"/>
+        <div>Nenhum playalong enviado ainda.</div>
+      </div>}
+
+      {meusPa.map(p=>{
+        const streamUrl=driveStreamUrl(p.url);
+        return <div key={p.id} style={{background:SURF,border:`1px solid ${BORDER}`,borderRadius:16,padding:'1.1rem',marginBottom:10}}>
+          <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
+            <div style={{width:44,height:44,borderRadius:10,background:'#4D9EF518',border:'1px solid #4D9EF530',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <i className="ti ti-headphones" style={{fontSize:20,color:'#4D9EF5'}} aria-hidden="true"/>
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:14,fontWeight:700,color:CTEXT}}>{p.tt}</div>
+              {p.ob&&<div style={{fontSize:11,color:TEXT2,marginTop:2}}>{p.ob}</div>}
+              {streamUrl&&<PlayerAudio src={streamUrl} accentColor="#4D9EF5"/>}
+            </div>
+          </div>
+        </div>;
+      })}
+    </div>
+  </div>;
+}
+
 // ── Área do Aluno (link público) ──────────────────────────────────────────────
 function AlunoPublico({initPage}){
   const {id}=useParams();
@@ -1870,6 +1905,7 @@ function AlunoPublico({initPage}){
 
   if(paginaAluno==='ferramentas') return <Ferramentas onVoltar={()=>setPaginaAluno('perfil')}/>;
   if(paginaAluno==='repertorio'&&aluno) return <Repertorio a={aluno} isDemo={true} onUpdate={async(dados)=>{await updateDoc(doc(db,'alunos',aluno.id),dados);setAluno(a=>({...a,...dados}));}} onVoltar={()=>setPaginaAluno('perfil')}/>;
+  if(paginaAluno==='playalongs'&&aluno) return <PlayalongsAluno a={aluno} playalongs={playalongs} onVoltar={()=>setPaginaAluno('perfil')}/>;
 
   return <div>
     {aviso&&!avisoFechado&&<div style={{
@@ -1902,7 +1938,7 @@ function AlunoPublico({initPage}){
         }}>Entendido ✓</button>
       </div>
     </div>}
-    <PerfilAluno a={aluno} banco={banco} playalongs={playalongs} isDemo={true} onVoltar={()=>{}} onUpdate={()=>{}} onEditar={()=>{}} onModalMural={()=>{}} onEnviarVideo={()=>{}} onExcluir={()=>{}} salvarAluno={()=>{}} modal={null} setModal={()=>{}} alunos={[]} onFerramentas={()=>setPaginaAluno('ferramentas')} onRepertorio={()=>setPaginaAluno('repertorio')}/>
+    <PerfilAluno a={aluno} banco={banco} playalongs={playalongs} isDemo={true} onVoltar={()=>{}} onUpdate={()=>{}} onEditar={()=>{}} onModalMural={()=>{}} onEnviarVideo={()=>{}} onExcluir={()=>{}} salvarAluno={()=>{}} modal={null} setModal={()=>{}} alunos={[]} onFerramentas={()=>setPaginaAluno('ferramentas')} onRepertorio={()=>setPaginaAluno('repertorio')} onPlayalongs={()=>setPaginaAluno('playalongs')}/>
   </div>;
 }
 
