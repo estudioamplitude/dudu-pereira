@@ -143,7 +143,7 @@ function yTh(id){return 'https://img.youtube.com/vi/'+id+'/mqdefault.jpg';}
 function yEm(id){return 'https://www.youtube.com/embed/'+id+'?rel=0&autoplay=1';}
 function yId(url){const m=url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([^&\s?]+)/);return m?m[1]:null;}
 function driveId(url){const m=url.match(/\/d\/([^\/]+)/)||url.match(/id=([^&\s]+)/);return m?m[1]:null;}
-function driveStreamUrl(url){const id=driveId(url);return id?`https://drive.google.com/uc?export=download&id=${id}`:null;}
+function driveStreamUrl(url){const id=driveId(url);return id?`https://drive.google.com/file/d/${id}/preview`:null;}
 function pgr(a){return Math.round(((a.t?.R?.p||0)+(a.t?.T?.p||0)+(a.t?.K?.p||0))/3);}
 
 // ── Avatar + Badge ───────────────────────────────────────────────────────────
@@ -397,56 +397,17 @@ function PainelFinancas({alunos,onAbrirAluno}){
 }
 
 
-// ── Player de Áudio customizado (sem controles nativos / sem download fácil) ──
+// ── Player de Áudio — iframe oficial do Google Drive ──────────────────────────
 function PlayerAudio({src,accentColor}){
-  const audioRef=React.useRef(null);
-  const [playing,setPlaying]=React.useState(false);
-  const [cur,setCur]=React.useState(0);
-  const [dur,setDur]=React.useState(0);
-
-  function fmt(s){
-    if(!s||isNaN(s))return '0:00';
-    const m=Math.floor(s/60),sec=Math.floor(s%60);
-    return `${m}:${sec.toString().padStart(2,'0')}`;
-  }
-
-  function toggle(){
-    const el=audioRef.current; if(!el)return;
-    if(playing){el.pause();}else{el.play().catch(()=>{});}
-  }
-
-  function seek(e){
-    const el=audioRef.current; if(!el||!dur)return;
-    const rect=e.currentTarget.getBoundingClientRect();
-    const pct=(e.clientX-rect.left)/rect.width;
-    el.currentTime=pct*dur;
-  }
-
-  const pct=dur?(cur/dur)*100:0;
-  const c=accentColor||'#1DBA88';
-
-  return <div style={{background:'#161B25',border:'1px solid #1E2538',borderRadius:10,padding:'10px 14px',marginTop:10,display:'flex',alignItems:'center',gap:10}}
-    onContextMenu={e=>e.preventDefault()}>
-    <audio
-      ref={audioRef}
+  return <div style={{borderRadius:10,overflow:'hidden',marginTop:10,border:'1px solid #1E2538'}}>
+    <iframe
       src={src}
-      preload="metadata"
-      onTimeUpdate={e=>setCur(e.target.currentTime)}
-      onLoadedMetadata={e=>setDur(e.target.duration)}
-      onPlay={()=>setPlaying(true)}
-      onPause={()=>setPlaying(false)}
-      onEnded={()=>setPlaying(false)}
-      controlsList="nodownload noremoteplaybook"
-      onContextMenu={e=>e.preventDefault()}
-      style={{display:'none'}}
+      width="100%"
+      height="60"
+      style={{border:'none',display:'block'}}
+      allow="autoplay"
+      title="Player de áudio"
     />
-    <button onClick={toggle} style={{width:34,height:34,borderRadius:'50%',background:c,border:'none',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
-      <i className={`ti ${playing?'ti-player-pause-filled':'ti-player-play-filled'}`} aria-hidden="true"/>
-    </button>
-    <div onClick={seek} style={{flex:1,height:4,background:'#28304A',borderRadius:2,position:'relative',cursor:'pointer'}}>
-      <div style={{position:'absolute',left:0,top:0,height:'100%',background:c,borderRadius:2,width:`${pct}%`}}/>
-    </div>
-    <span style={{fontSize:10,color:'#7A85A8',flexShrink:0,minWidth:70,textAlign:'right'}}>{fmt(cur)} / {fmt(dur)}</span>
   </div>;
 }
 
