@@ -1844,16 +1844,9 @@ function PlayalongsAluno({a,playalongs,onVoltar}){
       {meusPa.map(p=>{
         const streamUrl=driveStreamUrl(p.url);
         return <div key={p.id} style={{background:SURF,border:`1px solid ${BORDER}`,borderRadius:16,padding:'1.1rem',marginBottom:10}}>
-          <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
-            <div style={{width:44,height:44,borderRadius:10,background:'#4D9EF518',border:'1px solid #4D9EF530',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <i className="ti ti-headphones" style={{fontSize:20,color:'#4D9EF5'}} aria-hidden="true"/>
-            </div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:14,fontWeight:700,color:CTEXT}}>{p.tt}</div>
-              {p.ob&&<div style={{fontSize:11,color:TEXT2,marginTop:2}}>{p.ob}</div>}
-              {streamUrl&&<PlayerAudio src={streamUrl} accentColor="#4D9EF5"/>}
-            </div>
-          </div>
+          <div style={{fontSize:14,fontWeight:700,color:CTEXT}}>{p.tt}</div>
+          {p.ob&&<div style={{fontSize:11,color:TEXT2,marginTop:2}}>{p.ob}</div>}
+          {streamUrl&&<PlayerAudio src={streamUrl} accentColor="#4D9EF5"/>}
         </div>;
       })}
     </div>
