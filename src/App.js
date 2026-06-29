@@ -886,6 +886,60 @@ function ModalDespachante({modal,setModal,alunos,banco,salvarAluno,salvarVideo,a
 }
 
 // ── Modal Aluno ───────────────────────────────────────────────────────────────
+
+// ── Campo de data com auto-avanço Dia/Mês/Ano ─────────────────────────────────
+function DateInput({value,onChange}){
+  // value vem no formato YYYY-MM-DD (compatível com input type=date)
+  const [dd,mm,yy]=value?value.split('-'):['',''];
+  const diaRef=React.useRef(null);
+  const mesRef=React.useRef(null);
+  const anoRef=React.useRef(null);
+
+  const [d,setD]=React.useState(value?value.split('-')[2]:'');
+  const [m,setM]=React.useState(value?value.split('-')[1]:'');
+  const [a,setA]=React.useState(value?value.split('-')[0]:'');
+
+  function emit(nd,nm,na){
+    if(nd&&nm&&na&&na.length===4){
+      onChange(`${na}-${nm.padStart(2,'0')}-${nd.padStart(2,'0')}`);
+    } else if(!nd&&!nm&&!na){
+      onChange('');
+    }
+  }
+
+  function handleDia(v){
+    v=v.replace(/\D/g,'').slice(0,2);
+    setD(v);
+    emit(v,m,a);
+    if(v.length===2) mesRef.current?.focus();
+  }
+  function handleMes(v){
+    v=v.replace(/\D/g,'').slice(0,2);
+    setM(v);
+    emit(d,v,a);
+    if(v.length===2) anoRef.current?.focus();
+  }
+  function handleAno(v){
+    v=v.replace(/\D/g,'').slice(0,4);
+    setA(v);
+    emit(d,m,v);
+  }
+
+  const boxStyle={
+    width:46,textAlign:'center',border:'1px solid var(--border)',borderRadius:7,
+    padding:'8px 4px',fontSize:13,background:'var(--surface2)',color:'var(--text)',
+    fontFamily:'inherit',
+  };
+
+  return <div style={{display:'flex',alignItems:'center',gap:6}}>
+    <input ref={diaRef} value={d} onChange={e=>handleDia(e.target.value)} placeholder="DD" maxLength={2} inputMode="numeric" style={boxStyle}/>
+    <span style={{color:'var(--text3)'}}>/</span>
+    <input ref={mesRef} value={m} onChange={e=>handleMes(e.target.value)} placeholder="MM" maxLength={2} inputMode="numeric" style={boxStyle}/>
+    <span style={{color:'var(--text3)'}}>/</span>
+    <input ref={anoRef} value={a} onChange={e=>handleAno(e.target.value)} placeholder="AAAA" maxLength={4} inputMode="numeric" style={{...boxStyle,width:64}}/>
+  </div>;
+}
+
 function ModalAluno({aluno,onSalvar,onClose}){
   const [form,setForm]=useState({nm:aluno?.nm||'',wa:aluno?.wa||'',wr:aluno?.wr||'',an:aluno?.an||'',pl:aluno?.pl||'Learning Plan',dia:aluno?.dia?.toString()||'10',val:aluno?.val?.toString()||'150',td:aluno?.td?.toString()||'30',diasAula:aluno?.diasAula||[],horario:aluno?.horario||''});
   const f=k=>v=>setForm(p=>({...p,[k]:v}));
@@ -895,7 +949,7 @@ function ModalAluno({aluno,onSalvar,onClose}){
       <div style={{marginBottom:9}}><div className="flabel">Nome completo *</div><input className="inp" value={form.nm} onChange={e=>f('nm')(e.target.value)} placeholder="Ex: João da Silva"/></div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9,marginBottom:9}}>
         <div><div className="flabel">WhatsApp (DDD)</div><input className="inp" value={form.wa} onChange={e=>f('wa')(e.target.value)} placeholder="49999990000"/></div>
-        <div><div className="flabel">Aniversário</div><input className="inp" type="date" value={form.an} onChange={e=>f('an')(e.target.value)}/></div>
+        <div><div className="flabel">Aniversário</div><DateInput value={form.an} onChange={v=>f('an')(v)}/></div>
       </div>
       <div><div className="flabel">WhatsApp do responsável (se menor)</div><input className="inp" value={form.wr} onChange={e=>f('wr')(e.target.value)} placeholder="49999990000"/></div>
     </div>
